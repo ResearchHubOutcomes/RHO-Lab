@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: verifica di ipotesi e valore p | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: valore p, intervallo di confidenza, potenza e confronti multipli. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/verifica-di-ipotesi/">← Torna alla scheda</a>
+</div>
+<h1>Verifica di ipotesi e valore p</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Un risultato che non decide</h2><span class="tag">Guarda</span></div>
+  <p>Lo stesso confronto della scheda: riammissioni con il nuovo protocollo (45 su 400) e con quello attuale (60 su 400). Esegui e guarda insieme il valore p e l'intervallo di confidenza.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:144px">res &lt;- prop.test(x = c(45, 60), n = c(400, 400), correct = FALSE)
+
+res$estimate                     # observed proportions
+round(res$p.value, 3)            # p-value
+round(100 * res$conf.int, 1)     # 95% CI of the difference, percentage points</textarea></div>
+  <p class="ask">Il valore p supera 0,05. Possiamo concludere che i due protocolli sono equivalenti?</p>
+  <details><summary>Risposta</summary><div>
+    <p>No. L'intervallo di confidenza va da una riduzione di oltre 8 punti a un aumento di quasi un punto: i dati sono compatibili sia con un beneficio importante sia con un piccolo peggioramento. La conclusione corretta è che lo studio non basta per decidere, non che non ci sia differenza.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Quando l&#x27;ipotesi nulla è vera</h2><span class="tag">Guarda</span></div>
+  <p>Simuliamo 2.000 studi in cui il trattamento non ha alcun effetto, e per ciascuno calcoliamo il valore p di un t test. Esegui e guarda come si distribuiscono.</p>
+  <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:276px">set.seed(5)
+p &lt;- replicate(2000, {
+  a &lt;- rnorm(50, 140, 15)        # control group
+  b &lt;- rnorm(50, 140, 15)        # treated group, same true mean
+  t.test(a, b)$p.value
+})
+
+hist(p, breaks = 20, col = "#1D95C6", border = "white",
+     xlab = "p-value", main = "")
+abline(v = 0.05, lty = 2)
+mean(p &lt; 0.05)                   # share of false positives</textarea></div>
+  <p class="ask">Che forma ha la distribuzione dei valori p? E che quota di studi risulta "significativa"?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Quando l'ipotesi nulla è vera i valori p sono distribuiti in modo uniforme tra 0 e 1: un valore di 0,03 non è più raro di uno di 0,63. Circa il 5% degli studi scende sotto 0,05 per puro caso: è esattamente l'errore di primo tipo che si accetta fissando la soglia.</p>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Quanti pazienti sarebbero serviti?</h2><span class="tag">Scrivi tu</span></div>
+  <p>Calcola quanti pazienti per gruppo servirebbero per rilevare il passaggio dal 15% all'11,25% con una potenza del 90%, invece che dell'80%. Arrotonda per eccesso.</p>
+  <div class="cell" data-check="n_needed == ceiling(power.prop.test(p1 = 0.15, p2 = 0.1125, power = 0.9)$n)" data-ok="Corretto. Passare dall&#x27;80% al 90% di potenza costa circa un terzo di pazienti in più." data-ko="Non ancora: la potenza va scritta come proporzione, non come percentuale."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:110px">n_needed &lt;- ceiling(power.prop.test(p1 = 0.15, p2 = 0.1125,
+                                    power = ___)$n)
+n_needed</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Il 90% si scrive <code>0.9</code>. <code>ceiling()</code> arrotonda per eccesso: un paziente non si divide.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>n_needed &lt;- ceiling(power.prop.test(p1 = 0.15, p2 = 0.1125,
+                                    power = 0.9)$n)
+n_needed</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Venti confronti, nessun effetto</h2><span class="tag">Modifica</span></div>
+  <p>Uno studio confronta due gruppi su 20 esiti diversi, nessuno dei quali è davvero influenzato dal trattamento. Esegui, poi prova con <code>m &lt;- 5</code> e con <code>m &lt;- 50</code>.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:232px">set.seed(21)
+m &lt;- 20                                  # number of outcomes tested
+
+one_study &lt;- function() {
+  p &lt;- replicate(m, t.test(rnorm(40), rnorm(40))$p.value)
+  any(p &lt; 0.05)                          # at least one "significant"?
+}
+c(simulated = mean(replicate(500, one_study())),
+  theory    = 1 - 0.95^m)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con 20 esiti, in circa due studi su tre almeno un confronto risulta significativo anche se il trattamento non fa nulla. Con 50 esiti succede quasi sempre. Per questo l'esito principale va dichiarato prima e i confronti multipli vanno corretti.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Holm e Benjamini-Hochberg</h2><span class="tag">Scrivi tu</span></div>
+  <p>Hai otto valori p da altrettanti confronti. Conta quanti restano sotto 0,05 senza correzione, con la correzione di Holm e con quella di Benjamini-Hochberg (<code>"BH"</code>).</p>
+  <div class="cell" data-check="n_holm == sum(p.adjust(p, &quot;holm&quot;) &lt; 0.05) &amp;&amp; n_bh == sum(p.adjust(p, &quot;BH&quot;) &lt; 0.05)" data-ok="Corretto. Holm controlla la probabilità di anche un solo falso positivo ed è più severo; Benjamini-Hochberg controlla la quota attesa di falsi positivi e ne lascia passare di più." data-ko="Non ancora: i nomi dei metodi vanno tra virgolette, &quot;holm&quot; e &quot;BH&quot;."><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:188px">p &lt;- c(0.001, 0.008, 0.012, 0.021, 0.034, 0.049, 0.18, 0.62)
+
+n_raw  &lt;- sum(p &lt; 0.05)
+n_holm &lt;- sum(p.adjust(p, method = ___) &lt; 0.05)
+n_bh   &lt;- sum(p.adjust(p, method = ___) &lt; 0.05)
+
+c(raw = n_raw, holm = n_holm, bh = n_bh)</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p><code>p.adjust(p, method = "holm")</code> restituisce i valori p corretti, che si confrontano con la soglia abituale di 0,05.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>p &lt;- c(0.001, 0.008, 0.012, 0.021, 0.034, 0.049, 0.18, 0.62)
+
+n_raw  &lt;- sum(p &lt; 0.05)
+n_holm &lt;- sum(p.adjust(p, method = "holm") &lt; 0.05)
+n_bh   &lt;- sum(p.adjust(p, method = "BH") &lt; 0.05)
+
+c(raw = n_raw, holm = n_holm, bh = n_bh)</pre>
+    <button type="button" class="ghost" data-use-solution="c5">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

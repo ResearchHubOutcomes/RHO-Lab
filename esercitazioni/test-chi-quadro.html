@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: Il test chi-quadro | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: frequenze attese, chi-quadro, test di Fisher, grandi campioni e paradosso di Simpson. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/test-chi-quadro/">← Torna alla scheda</a>
+</div>
+<h1>Il test chi-quadro</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Osservate contro attese</h2><span class="tag">Guarda</span></div>
+  <p>Le complicanze nei due ospedali della scheda. Esegui e confronta la tabella osservata con quella attesa se i due ospedali fossero identici.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:210px">tab &lt;- matrix(c(48, 352, 24, 376), nrow = 2, byrow = TRUE,
+              dimnames = list(hospital = c("A", "B"),
+                              complication = c("yes", "no")))
+test &lt;- chisq.test(tab, correct = FALSE)
+
+tab
+test$expected
+test</textarea></div>
+  <p class="ask">Da dove viene il 36 nella tabella delle frequenze attese?</p>
+  <details><summary>Risposta</summary><div>
+    <p>In tutto ci sono 72 complicanze su 800 pazienti, cioè il 9%. Se i due ospedali fossero identici, il 9% dei 400 pazienti di ciascuno avrebbe una complicanza: 36. Il chi-quadro misura quanto 48 e 24 si allontanano da quel 36.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Il chi-quadro a mano</h2><span class="tag">Scrivi tu</span></div>
+  <p>Calcola le frequenze attese e la statistica chi-quadro senza usare <code>chisq.test()</code>. Completa le due righe con i <code>___</code>.</p>
+  <div class="cell" data-check="isTRUE(all.equal(chi2, unname(chisq.test(tab, correct = FALSE)$statistic)))" data-ok="Corretto: lo stesso valore di chisq.test(). Ogni cella pesa per il suo scarto al quadrato, diviso per quello che ci si aspettava." data-ko="Non ancora: le attese si dividono per il totale, e ogni scarto al quadrato per la sua frequenza attesa."><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:166px">tab &lt;- matrix(c(48, 352, 24, 376), nrow = 2, byrow = TRUE)
+n &lt;- sum(tab)
+
+expected &lt;- outer(rowSums(tab), colSums(tab)) / ___
+chi2 &lt;- sum((tab - expected)^2 / ___)
+chi2</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Attesa = totale di riga × totale di colonna / totale generale. Nella formula del chi-quadro il denominatore è <code>expected</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>tab &lt;- matrix(c(48, 352, 24, 376), nrow = 2, byrow = TRUE)
+n &lt;- sum(tab)
+
+expected &lt;- outer(rowSums(tab), colSums(tab)) / n
+chi2 &lt;- sum((tab - expected)^2 / expected)
+chi2</pre>
+    <button type="button" class="ghost" data-use-solution="c2">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Pochi eventi</h2><span class="tag">Scrivi tu</span></div>
+  <p>Il secondo esempio della scheda: 40 pazienti in tutto. Calcola la frequenza attesa più piccola e confronta il chi-quadro con il test esatto di Fisher. R ti avvertirà che l'approssimazione può essere scorretta.</p>
+  <div class="cell" data-check="isTRUE(all.equal(min_expected, min(suppressWarnings(chisq.test(small))$expected)))" data-ok="Corretto. Con frequenze attese sotto 5 l&#x27;approssimazione del chi-quadro non è affidabile e si usa il test esatto di Fisher." data-ko="Non ancora: le frequenze attese sono nell&#x27;elemento expected."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:188px">small &lt;- matrix(c(7, 13, 1, 19), nrow = 2, byrow = TRUE)
+
+min_expected &lt;- min(chisq.test(small)$___)
+min_expected
+
+chisq.test(small, correct = FALSE)$p.value
+fisher.test(small)$p.value</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Come nell'esercizio 1, le frequenze attese si leggono in <code>$expected</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>small &lt;- matrix(c(7, 13, 1, 19), nrow = 2, byrow = TRUE)
+
+min_expected &lt;- min(chisq.test(small)$expected)
+min_expected
+
+chisq.test(small, correct = FALSE)$p.value
+fisher.test(small)$p.value</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Significativo non vuol dire importante</h2><span class="tag">Modifica</span></div>
+  <p>Due proporzioni quasi uguali, 12% e 11%. Esegui con 400 pazienti per gruppo, poi cambia <code>n &lt;- 400</code> in <code>n &lt;- 40000</code>, come in un grande archivio amministrativo.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:188px">n &lt;- 400                                   # patients per group, try 40000
+events &lt;- round(c(0.12, 0.11) * n)
+tab &lt;- cbind(events, n - events)
+
+c(p_value = chisq.test(tab, correct = FALSE)$p.value,
+  risk_difference = 0.12 - 0.11,
+  relative_risk = 0.12 / 0.11)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con 40.000 pazienti per gruppo il valore p diventa minuscolo, ma la differenza resta di un punto percentuale e il rischio relativo resta 1,09. Il test dice solo che la differenza difficilmente è dovuta al caso; quanto conta lo dicono le misure di effetto, che vanno sempre riportate.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Il paradosso di Simpson</h2><span class="tag">Guarda</span></div>
+  <p>Mortalità in due ospedali, prima nel complesso e poi separando i pazienti a basso e alto rischio. L'ospedale A tratta soprattutto pazienti ad alto rischio. Esegui e confronta.</p>
+  <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:232px">deaths   &lt;- c(A_low = 2,   A_high = 135, B_low = 27,  B_high = 18)
+patients &lt;- c(A_low = 100, A_high = 900, B_low = 900, B_high = 100)
+
+# overall mortality
+round(100 * c(A = sum(deaths[1:2]) / sum(patients[1:2]),
+              B = sum(deaths[3:4]) / sum(patients[3:4])), 1)
+
+# mortality within each risk group
+round(100 * deaths / patients, 1)</textarea></div>
+  <p class="ask">Quale ospedale ha la mortalità più bassa?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Nel complesso sembra migliore B (4,5% contro 13,7%), ma all'interno di ciascun gruppo di rischio è migliore A (2% contro 3% e 15% contro 18%). La differenza grezza riflette chi viene curato, non come: per un confronto corretto bisogna tenere conto della gravità, con la standardizzazione o con un modello di regressione.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

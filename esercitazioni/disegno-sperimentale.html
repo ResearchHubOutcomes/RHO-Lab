@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: disegno sperimentale | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: numerosità, dimensione dell&#x27;effetto, design effect, randomizzazione a blocchi e confondimento. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/disegno-sperimentale/">← Torna alla scheda</a>
+</div>
+<h1>Disegno sperimentale</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Dimezzare l&#x27;effetto</h2><span class="tag">Modifica</span></div>
+  <p>Quanti pazienti servono per rilevare una differenza di 5 unità con deviazione standard 12? Esegui, poi dimezza la differenza (<code>delta = 2.5</code>) e guarda come cambia la numerosità.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:110px">res &lt;- power.t.test(delta = 5, sd = 12, sig.level = 0.05, power = 0.80)   # try delta = 2.5
+ceiling(res$n)           # patients per group, always rounded up</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con una differenza di 5 servono 92 pazienti per gruppo; con 2,5 ne servono circa quattro volte tanti. La numerosità dipende dal quadrato del rapporto tra differenza e variabilità: scegliere l'effetto da rilevare è la decisione che pesa di più.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Due proporzioni</h2><span class="tag">Scrivi tu</span></div>
+  <p>Calcola i pazienti per gruppo necessari per distinguere il 20% dal 12% con potenza dell'80%. Arrotonda per eccesso.</p>
+  <div class="cell" data-check="n_group == ceiling(power.prop.test(p1 = 0.20, p2 = 0.12, power = 0.80)$n)" data-ok="Corretto: lo stesso valore della scheda. Con eventi rari la numerosità sale in fretta." data-ko="Non ancora: le proporzioni vanno scritte come numeri tra 0 e 1."><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:110px">n_group &lt;- ceiling(power.prop.test(p1 = ___, p2 = ___,
+                                   power = 0.80)$n)
+n_group</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Il 20% si scrive <code>0.20</code>, il 12% <code>0.12</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>n_group &lt;- ceiling(power.prop.test(p1 = 0.20, p2 = 0.12,
+                                   power = 0.80)$n)
+n_group</pre>
+    <button type="button" class="ghost" data-use-solution="c2">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Lo stesso studio, randomizzando i reparti</h2><span class="tag">Scrivi tu</span></div>
+  <p>Lo studio dell'esercizio 2 viene fatto randomizzando interi reparti di 20 pazienti, con una correlazione intraclasse di 0,05. Calcola il design effect, i pazienti per gruppo e il numero di reparti per gruppo.</p>
+  <div class="cell" data-check="isTRUE(all.equal(de, 1 + 19 * 0.05)) &amp;&amp; n_cluster == ceiling(ceiling(power.prop.test(p1 = 0.20, p2 = 0.12, power = 0.80)$n) * (1 + 19 * 0.05))" data-ok="Corretto. Con una correlazione apparentemente piccola servono quasi il doppio dei pazienti: ignorarla porterebbe a uno studio con meno potenza di quella dichiarata." data-ko="Non ancora: il design effect usa la correlazione intraclasse, e la numerosità individuale va moltiplicata per il design effect."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:232px">n_individual &lt;- ceiling(power.prop.test(p1 = 0.20, p2 = 0.12, power = 0.80)$n)
+m   &lt;- 20        # patients per ward
+icc &lt;- 0.05
+
+de &lt;- 1 + (m - 1) * ___
+n_cluster &lt;- ceiling(n_individual * ___)
+wards &lt;- ceiling(n_cluster / m)
+
+c(design_effect = de, patients_per_group = n_cluster, wards_per_group = wards)</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Nella prima riga va <code>icc</code>, nella seconda <code>de</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>n_individual &lt;- ceiling(power.prop.test(p1 = 0.20, p2 = 0.12, power = 0.80)$n)
+m   &lt;- 20        # patients per ward
+icc &lt;- 0.05
+
+de &lt;- 1 + (m - 1) * icc
+n_cluster &lt;- ceiling(n_individual * de)
+wards &lt;- ceiling(n_cluster / m)
+
+c(design_effect = de, patients_per_group = n_cluster, wards_per_group = wards)</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Randomizzazione semplice o a blocchi?</h2><span class="tag">Guarda</span></div>
+  <p>Simuliamo 2.000 piccoli studi da 20 pazienti assegnati con una moneta, e contiamo quanti pazienti finiscono nel gruppo A. Esegui e guarda quanto spesso i gruppi risultano sbilanciati.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:254px">set.seed(2026)
+n_A &lt;- replicate(2000, sum(sample(c("A", "B"), 20, replace = TRUE) == "A"))
+
+barplot(table(factor(n_A, levels = 0:20)), col = "#1D95C6", border = "white",
+        xlab = "patients in group A (out of 20)", ylab = "studies")
+mean(abs(n_A - 10) &gt;= 3)       # share with 13-7 or worse
+
+# block randomisation: always 10 and 10
+blocks &lt;- as.vector(replicate(5, sample(c("A", "A", "B", "B"))))
+table(blocks)</textarea></div>
+  <p class="ask">Quanto spesso la moneta produce gruppi sbilanciati 13 a 7 o peggio?</p>
+  <details><summary>Risposta</summary><div>
+    <p>In circa un quarto degli studi. Con la randomizzazione a blocchi di 4 l'equilibrio è garantito ogni quattro pazienti, e il seme fissato con <code>set.seed()</code> rende la sequenza riproducibile e documentabile nel protocollo.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Perché randomizzare</h2><span class="tag">Modifica</span></div>
+  <p>Un trattamento che non ha alcun effetto. Nel primo scenario i medici lo danno più spesso ai pazienti meno gravi; nel secondo lo assegna il sorteggio. Esegui e confronta le due stime, poi cambia <code>randomised &lt;- FALSE</code> in <code>TRUE</code>.</p>
+  <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:232px">set.seed(8)
+randomised &lt;- FALSE                                  # try TRUE
+
+severity &lt;- rnorm(1000)                              # unmeasured prognosis
+p_treat  &lt;- if (randomised) 0.5 else plogis(-1.5 * severity)
+treated  &lt;- rbinom(1000, 1, p_treat)
+outcome  &lt;- 50 + 8 * severity + rnorm(1000, 0, 5)    # treatment has NO effect
+
+coef(summary(lm(outcome ~ treated)))["treated", c("Estimate", "Pr(&gt;|t|)")]</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Senza randomizzazione i trattati sono pazienti meno gravi e il trattamento sembra efficace, con un valore p minuscolo, anche se non fa nulla. Con il sorteggio la gravità si distribuisce in modo simile nei due gruppi e la stima torna vicina a zero, anche se la gravità non è stata misurata.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: test non parametrici | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: ranghi, Mann-Whitney, Wilcoxon, Kruskal-Wallis e potenza a confronto con il t test. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/test-non-parametrici/">← Torna alla scheda</a>
+</div>
+<h1>Test non parametrici</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Dai valori ai ranghi</h2><span class="tag">Guarda</span></div>
+  <p>Sette degenze, una molto lunga. Esegui e guarda come cambiano i ranghi se il ricovero più lungo passa da 40 a 200 giorni.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:144px">stay  &lt;- c(4, 6, 3, 9, 5, 7, 40)
+stay2 &lt;- c(4, 6, 3, 9, 5, 7, 200)
+
+rbind(stay, rank = rank(stay), stay2, rank2 = rank(stay2))
+c(mean = mean(stay), mean2 = mean(stay2))</textarea></div>
+  <p class="ask">Che cosa cambia tra le due serie, e che cosa resta uguale?</p>
+  <details><summary>Risposta</summary><div>
+    <p>La media cambia moltissimo, i ranghi per niente: in entrambi i casi il ricovero più lungo ha rango 7. È per questo che i test basati sui ranghi sono robusti ai valori estremi.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Un valore estremo</h2><span class="tag">Modifica</span></div>
+  <p>Due gruppi di 15 pazienti con degenze simili. Nel gruppo B c'è un ricovero lunghissimo. Esegui, poi cambia 200 in 2000 e confronta i due valori p.</p>
+  <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:166px">set.seed(30)
+a &lt;- round(rlnorm(15, 1.6, 0.4))
+b &lt;- c(round(rlnorm(14, 1.9, 0.4)), 200)      # one extreme stay, try 2000
+
+c(t_test       = t.test(a, b)$p.value,
+  mann_whitney = wilcox.test(a, b, exact = FALSE)$p.value)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Il valore estremo gonfia la varianza del gruppo B e il t test perde la differenza; il Mann-Whitney, che guarda solo la posizione di quel ricovero nella classifica, non cambia anche quando il valore diventa 2000.</p>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>La U di Mann-Whitney a mano</h2><span class="tag">Scrivi tu</span></div>
+  <p>Con i dati della scheda, calcola la somma dei ranghi del primo gruppo e da lì la statistica U. Poi dividila per il numero di coppie per stimare la probabilità che un paziente del modello attuale resti ricoverato più a lungo di uno del modello nuovo.</p>
+  <div class="cell" data-check="isTRUE(all.equal(U1, unname(wilcox.test(current, new, exact = FALSE)$statistic)))" data-ok="Corretto: U1 coincide con la W di wilcox.test(). Diviso per il numero di coppie diventa una misura di effetto facile da comunicare." data-ko="Non ancora: i ranghi del primo gruppo sono le prime n1 posizioni del vettore r."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:232px">set.seed(88)
+current &lt;- pmax(1, round(exp(rnorm(150, 1.90, 0.55))))
+new     &lt;- pmax(1, round(exp(rnorm(150, 1.65, 0.55))))
+n1 &lt;- length(current); n2 &lt;- length(new)
+
+r &lt;- rank(c(current, new))
+R1 &lt;- sum(r[1:___])                       # rank sum of the first group
+U1 &lt;- R1 - n1 * (n1 + 1) / 2
+U1 / (n1 * n2)                            # estimates P(current &gt; new)</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>I due gruppi sono stati uniti con <code>c(current, new)</code>, quindi il primo gruppo occupa le posizioni da 1 a <code>n1</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>set.seed(88)
+current &lt;- pmax(1, round(exp(rnorm(150, 1.90, 0.55))))
+new     &lt;- pmax(1, round(exp(rnorm(150, 1.65, 0.55))))
+n1 &lt;- length(current); n2 &lt;- length(new)
+
+r &lt;- rank(c(current, new))
+R1 &lt;- sum(r[1:n1])                        # rank sum of the first group
+U1 &lt;- R1 - n1 * (n1 + 1) / 2
+U1 / (n1 * n2)                            # estimates P(current &gt; new)</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Quale test ha più potenza?</h2><span class="tag">Modifica</span></div>
+  <p>Simuliamo 400 studi con 25 pazienti per gruppo e una differenza vera, e contiamo quante volte ciascun test la trova. Esegui con dati normali, poi cambia <code>skewed &lt;- FALSE</code> in <code>TRUE</code>.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:254px">set.seed(12)
+skewed &lt;- FALSE                                   # try TRUE
+
+draw &lt;- function(shift) if (skewed) rlnorm(25, 1.6 + shift, 0.8) else rnorm(25, 10 + 3 * shift, 4)
+res &lt;- replicate(400, {
+  a &lt;- draw(0); b &lt;- draw(0.5)
+  c(t = t.test(a, b)$p.value &lt; 0.05,
+    mw = wilcox.test(a, b, exact = FALSE)$p.value &lt; 0.05)
+})
+rowMeans(res)                                     # estimated power</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con dati normali il t test ha un po' più potenza del Mann-Whitney, ma la differenza è piccola. Con dati molto asimmetrici la situazione si rovescia e il Mann-Whitney trova l'effetto più spesso. La scelta va fatta in base alla natura dei dati, prima di vedere i risultati.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Tre gruppi e i confronti a coppie</h2><span class="tag">Guarda</span></div>
+  <p>Tre modelli organizzativi. Il test di Kruskal-Wallis dice se almeno un gruppo differisce; i confronti a coppie corretti con Holm dicono quali.</p>
+  <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:254px">set.seed(88)
+current &lt;- pmax(1, round(exp(rnorm(150, 1.90, 0.55))))
+new     &lt;- pmax(1, round(exp(rnorm(150, 1.65, 0.55))))
+third   &lt;- pmax(1, round(exp(rnorm(150, 1.80, 0.55))))
+
+stay  &lt;- c(current, new, third)
+model &lt;- factor(rep(c("current", "new", "third"), each = 150))
+
+kruskal.test(stay ~ model)
+pairwise.wilcox.test(stay, model, p.adjust.method = "holm", exact = FALSE)</textarea></div>
+  <p class="ask">Quali coppie risultano diverse dopo la correzione?</p>
+  <details><summary>Risposta</summary><div>
+    <p>La tabella dei confronti riporta i valori p già corretti con Holm: si leggono confrontandoli con 0,05. Con questi dati la differenza più netta è tra il modello attuale e quello nuovo; il terzo modello sta in mezzo ed è più difficile da distinguere dagli altri due.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: confronti tra medie | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: t test di Welch, dati appaiati, ANOVA, Tukey e ANCOVA. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/confronti-tra-medie/">← Torna alla scheda</a>
+</div>
+<h1>Confronti tra medie</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Segnale contro rumore</h2><span class="tag">Guarda</span></div>
+  <p>Due coppie di gruppi con la stessa differenza vera, 5 mmHg. Nella prima i pazienti sono simili tra loro, nella seconda molto diversi. Esegui e confronta i due valori p.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:210px">set.seed(3)
+low_a  &lt;- rnorm(30, 140, 4);  low_b  &lt;- rnorm(30, 135, 4)    # little noise
+high_a &lt;- rnorm(30, 140, 40); high_b &lt;- rnorm(30, 135, 40)   # a lot of noise
+
+boxplot(list(A = low_a, B = low_b, A = high_a, B = high_b),
+        col = c("#1D95C6", "#9fd3ea"), ylab = "systolic pressure (mmHg)")
+c(little_noise = t.test(low_a, low_b)$p.value,
+  a_lot_noise  = t.test(high_a, high_b)$p.value)</textarea></div>
+  <p class="ask">Perché la stessa differenza di 5 mmHg dà due conclusioni opposte?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Il t test confronta la differenza tra le medie con la variabilità entro i gruppi. Se i pazienti variano di pochi mmHg, 5 mmHg sono un segnale netto; se variano di 40, la stessa differenza si confonde con il rumore.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Lo stesso paziente, due misure</h2><span class="tag">Modifica</span></div>
+  <p>La pressione di 25 pazienti prima e dopo un trattamento. Esegui il t test per dati appaiati, poi togli <code>paired = TRUE</code> e confronta il valore p.</p>
+  <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:144px">set.seed(14)
+before &lt;- rnorm(25, 150, 18)                # patients differ a lot
+after  &lt;- before - 4 + rnorm(25, 0, 5)      # small, consistent reduction
+
+t.test(after, before, paired = TRUE)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con l'appaiamento il test lavora sulle differenze di ciascun paziente, e la grande variabilità tra un paziente e l'altro sparisce dal calcolo: la riduzione di circa 4 mmHg risulta netta. Trattando i dati come indipendenti la stessa riduzione si perde dentro le differenze tra pazienti.</p>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>La differenza con il suo intervallo</h2><span class="tag">Scrivi tu</span></div>
+  <p>I tempi di refertazione dei cinque laboratori della scheda. Salva in <code>ci</code> l'intervallo di confidenza al 95% della differenza tra il laboratorio 4 e il laboratorio 1, con il t test di Welch.</p>
+  <div class="cell" data-check="isTRUE(all.equal(as.numeric(ci), as.numeric(t.test(hours[lab == &quot;Lab 4&quot;], hours[lab == &quot;Lab 1&quot;])$conf.int)))" data-ok="Corretto. L&#x27;intervallo dice quanto è grande la differenza e con quale incertezza: un&#x27;informazione che il solo valore p non dà." data-ko="Non ancora: il secondo gruppo è &quot;Lab 1&quot; e l&#x27;intervallo si trova nell&#x27;elemento conf.int del risultato."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:188px">set.seed(99)
+lab &lt;- factor(rep(paste("Lab", 1:5), each = 40))
+hours &lt;- rnorm(200, mean = c(22, 23.5, 21, 28, 22.5)[lab], sd = 4.5)
+
+tt &lt;- t.test(hours[lab == "Lab 4"], hours[lab == ___])
+ci &lt;- tt$___
+round(ci, 1)</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Il risultato di <code>t.test()</code> è una lista: l'intervallo è in <code>tt$conf.int</code>. Il nome del laboratorio va tra virgolette.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>set.seed(99)
+lab &lt;- factor(rep(paste("Lab", 1:5), each = 40))
+hours &lt;- rnorm(200, mean = c(22, 23.5, 21, 28, 22.5)[lab], sd = 4.5)
+
+tt &lt;- t.test(hours[lab == "Lab 4"], hours[lab == "Lab 1"])
+ci &lt;- tt$conf.int
+round(ci, 1)</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Cinque laboratori in un&#x27;unica analisi</h2><span class="tag">Guarda</span></div>
+  <p>Invece di dieci t test tra coppie, un'ANOVA seguita dal test di Tukey. Esegui e guarda il grafico degli intervalli.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:232px">set.seed(99)
+lab &lt;- factor(rep(paste("Lab", 1:5), each = 40))
+hours &lt;- rnorm(200, mean = c(22, 23.5, 21, 28, 22.5)[lab], sd = 4.5)
+
+fit &lt;- aov(hours ~ lab)
+summary(fit)
+
+par(mar = c(4, 8, 1, 1))
+plot(TukeyHSD(fit), las = 1)</textarea></div>
+  <p class="ask">Quali coppie di laboratori differiscono davvero?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Sono quelle con l'intervallo che non attraversa lo zero: in pratica tutte le coppie che coinvolgono il laboratorio 4. Gli intervalli di Tukey sono già corretti per i dieci confronti, quindi il rischio complessivo di un falso allarme resta al 5%.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Valori finali, differenze o ANCOVA?</h2><span class="tag">Modifica</span></div>
+  <p>Uno studio randomizzato con misura basale e finale. Tre modi di stimare l'effetto del gruppo B: confrontare i valori finali, le differenze finale − basale, oppure aggiustare per il basale. Esegui e confronta gli errori standard; poi cambia la deviazione standard del basale da 15 a 5.</p>
+  <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:232px">set.seed(7)
+group &lt;- factor(rep(c("A", "B"), each = 50))
+baseline &lt;- rnorm(100, 150, 15)                  # try 5
+final &lt;- baseline - 8 - 5 * (group == "B") + rnorm(100, 0, 8)
+
+est &lt;- function(f) coef(summary(f))["groupB", c("Estimate", "Std. Error")]
+round(rbind(final_only = est(lm(final ~ group)),
+            change     = est(lm(I(final - baseline) ~ group)),
+            ancova     = est(lm(final ~ group + baseline))), 2)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>L'ANCOVA ha l'errore standard più piccolo: stima lo stesso effetto con più precisione. Quando il basale varia poco, il confronto dei soli valori finali si avvicina all'ANCOVA, mentre le differenze finale − basale aggiungono rumore. Quale analisi usare va dichiarato nel protocollo.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>
