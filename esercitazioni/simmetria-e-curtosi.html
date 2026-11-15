@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: indici di simmetria e curtosi | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: asimmetria, curtosi, trasformazione logaritmica e Q-Q plot. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/simmetria-e-curtosi/">← Torna alla scheda</a>
+</div>
+<h1>Indici di simmetria e curtosi</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>La spesa farmaceutica per paziente</h2><span class="tag">Guarda</span></div>
+  <p>2.000 valori di spesa simulati. Esegui e confronta media, mediana, asimmetria e curtosi prima e dopo il logaritmo.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:232px">set.seed(33)
+spend &lt;- exp(rnorm(2000, 6.6, 1.0))   # spending per patient, euros
+
+skewness &lt;- function(x) { m &lt;- x - mean(x); mean(m^3) / mean(m^2)^1.5 }
+ex_kurtosis &lt;- function(x) { m &lt;- x - mean(x); mean(m^4) / mean(m^2)^2 - 3 }
+
+round(c(mean = mean(spend), median = median(spend)))
+round(c(skewness = skewness(spend), kurtosis = ex_kurtosis(spend)), 2)
+round(c(skewness = skewness(log(spend)), kurtosis = ex_kurtosis(log(spend))), 2)</textarea></div>
+  <p class="ask">Perché la media è molto più alta della mediana? E cosa succede agli indici dopo il logaritmo?</p>
+  <details><summary>Risposta</summary><div>
+    <p>La distribuzione ha una lunga coda a destra: pochi pazienti con spese altissime trascinano in alto la media, mentre la mediana resta sul paziente tipico. Dopo il logaritmo asimmetria e curtosi in eccesso sono vicine a zero: la forma è diventata quasi simmetrica.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Quanto è lunga la coda</h2><span class="tag">Modifica</span></div>
+  <p>Il parametro <code>sdlog</code> controlla quanto è lunga la coda. Esegui, poi prova <code>0.3</code> e <code>1.5</code>: come cambiano la distanza tra media e mediana e l'asimmetria?</p>
+  <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:232px">set.seed(33)
+sdlog &lt;- 1.0                                  # try 0.3 and 1.5
+spend &lt;- exp(rnorm(2000, 6.6, sdlog))
+
+skewness &lt;- function(x) { m &lt;- x - mean(x); mean(m^3) / mean(m^2)^1.5 }
+round(c(mean = mean(spend), median = median(spend),
+        skewness = skewness(spend)), 2)
+hist(spend, breaks = 60, col = "#1D95C6", border = "white",
+     main = "", xlab = "spending (euros)")</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con una coda corta (0.3) media e mediana sono vicine e l'asimmetria è piccola; allungando la coda (1.5) la media si allontana dalla mediana e l'asimmetria cresce molto. Con forte asimmetria mediana e quartili descrivono meglio il paziente tipico.</p>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>La curtosi dopo il logaritmo</h2><span class="tag">Scrivi tu</span></div>
+  <p>Usa le funzioni già definite per calcolare l'asimmetria e la curtosi in eccesso del <b>logaritmo</b> della spesa. Sostituisci i <code>___</code>.</p>
+  <div class="cell" data-check="isTRUE(all.equal(sk_log, skewness(log(spend)))) &amp;&amp; isTRUE(all.equal(ku_log, ex_kurtosis(log(spend))))" data-ok="Corretto: dopo il logaritmo entrambi gli indici sono vicini a zero, come per una distribuzione normale." data-ko="Non ancora: entrambe le funzioni vanno applicate al logaritmo della spesa."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:210px">set.seed(33)
+spend &lt;- exp(rnorm(2000, 6.6, 1.0))
+skewness &lt;- function(x) { m &lt;- x - mean(x); mean(m^3) / mean(m^2)^1.5 }
+ex_kurtosis &lt;- function(x) { m &lt;- x - mean(x); mean(m^4) / mean(m^2)^2 - 3 }
+
+sk_log &lt;- skewness(___)
+ku_log &lt;- ex_kurtosis(___)
+round(c(sk_log, ku_log), 3)</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Il logaritmo naturale in R è <code>log()</code>: l'argomento da passare è <code>log(spend)</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>set.seed(33)
+spend &lt;- exp(rnorm(2000, 6.6, 1.0))
+skewness &lt;- function(x) { m &lt;- x - mean(x); mean(m^3) / mean(m^2)^1.5 }
+ex_kurtosis &lt;- function(x) { m &lt;- x - mean(x); mean(m^4) / mean(m^2)^2 - 3 }
+
+sk_log &lt;- skewness(log(spend))
+ku_log &lt;- ex_kurtosis(log(spend))
+round(c(sk_log, ku_log), 3)</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Il Q-Q plot</h2><span class="tag">Guarda</span></div>
+  <p>Il Q-Q plot confronta i quantili dei dati con quelli di una normale: se i punti stanno sulla retta, la forma è normale. A sinistra la spesa, a destra il suo logaritmo.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:210px">set.seed(33)
+spend &lt;- exp(rnorm(2000, 6.6, 1.0))
+
+par(mfrow = c(1, 2))
+qqnorm(spend, main = "spending", pch = 20, col = "grey40")
+qqline(spend, col = "#1D95C6", lwd = 2)
+qqnorm(log(spend), main = "log(spending)", pch = 20, col = "grey40")
+qqline(log(spend), col = "#1D95C6", lwd = 2)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>A sinistra i punti si staccano verso l'alto nella parte destra: è la coda lunga dei costi elevati. A destra seguono la retta: il logaritmo ha reso la distribuzione quasi normale. Un grafico come questo va sempre guardato insieme ai numeri.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Indici instabili con pochi dati</h2><span class="tag">Per chi vuole andare a fondo</span></div>
+  <p>Estraiamo 500 campioni da una normale (asimmetria vera 0) e calcoliamo l'asimmetria di ciascuno. Esegui con <code>n &lt;- 20</code>, poi prova <code>n &lt;- 500</code>.</p>
+  <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:210px">set.seed(7)
+n &lt;- 20                                        # try 500
+skewness &lt;- function(x) { m &lt;- x - mean(x); mean(m^3) / mean(m^2)^1.5 }
+
+sk &lt;- replicate(500, skewness(rnorm(n)))
+round(quantile(sk, c(0.05, 0.5, 0.95)), 2)
+hist(sk, breaks = 30, col = "#1D95C6", border = "white",
+     main = paste("skewness of normal samples, n =", n), xlab = "skewness")</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con 20 osservazioni l'asimmetria di campioni presi da una distribuzione perfettamente simmetrica oscilla molto lontano da zero; con 500 si concentra attorno a zero. Con pochi dati il valore numerico degli indici è poco affidabile: meglio guardare istogramma e Q-Q plot.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

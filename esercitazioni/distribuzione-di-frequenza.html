@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: distribuzione di frequenza | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: frequenze assolute, relative e cumulate, istogrammi e scelta delle classi. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/distribuzione-di-frequenza/">← Torna alla scheda</a>
+</div>
+<h1>Distribuzione di frequenza</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Frequenze assolute, relative e cumulate</h2><span class="tag">Guarda</span></div>
+  <p>1.500 degenze simulate di un reparto di medicina, raggruppate in classi. Esegui e leggi la tabella.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:232px">set.seed(11)
+stay &lt;- pmax(1, round(exp(rnorm(1500, 1.6, 0.7))))   # length of stay, days
+
+classes &lt;- cut(stay, breaks = c(0, 3, 7, 14, 30, Inf),
+               labels = c("1-3", "4-7", "8-14", "15-30", "&gt;30"))
+tab &lt;- table(classes)
+cbind(absolute   = tab,
+      relative   = round(prop.table(tab), 3),
+      cumulative = round(cumsum(prop.table(tab)), 3))</textarea></div>
+  <p class="ask">Che quota di ricoveri dura al massimo una settimana? In quale colonna lo leggi?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Nella colonna <code>cumulative</code>, alla riga 4-7: è la quota di ricoveri fino a 7 giorni. La frequenza cumulata risponde proprio a domande del tipo "quanti casi stanno sotto una soglia".</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>La scelta delle classi</h2><span class="tag">Modifica</span></div>
+  <p>Lo stesso istogramma con un numero diverso di classi. Esegui, poi cambia <code>breaks = 5</code> in <code>breaks = 60</code> e infine in <code>breaks = "FD"</code>.</p>
+  <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:210px">set.seed(11)
+stay &lt;- pmax(1, round(exp(rnorm(1500, 1.6, 0.7))))
+
+hist(stay[stay &lt;= 40], breaks = 5,          # try 60, then "FD"
+     col = "#1D95C6", border = "white",
+     xlab = "length of stay (days)", main = "")
+
+c(Sturges = nclass.Sturges(stay), FD = nclass.FD(stay))   # suggested classes</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con 5 classi la forma è appiattita e la coda a destra quasi sparisce; con 60 classi l'istogramma diventa frastagliato e mostra soprattutto rumore. La regola di Freedman-Diaconis ("FD") sceglie l'ampiezza in base alla dispersione dei dati ed è spesso un buon punto di partenza, ma vale sempre la pena provare più ampiezze.</p>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Quanti ricoveri oltre le due settimane?</h2><span class="tag">Scrivi tu</span></div>
+  <p>Calcola la quota di ricoveri che durano più di 14 giorni e il numero di classi suggerito dalla regola di Sturges. Sostituisci i <code>___</code> e premi Esegui.</p>
+  <div class="cell" data-check="isTRUE(all.equal(share_over_14, mean(stay &gt; 14))) &amp;&amp; n_classes == nclass.Sturges(stay)" data-ok="Corretto. La quota oltre una soglia è una frequenza relativa: confrontabile anche tra reparti di dimensioni diverse." data-ko="Non ancora: la soglia è 14 giorni e la funzione va applicata al vettore delle degenze."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:210px">set.seed(11)
+stay &lt;- pmax(1, round(exp(rnorm(1500, 1.6, 0.7))))
+
+share_over_14 &lt;- mean(stay &gt; ___)     # share of stays longer than 14 days
+n_classes &lt;- nclass.Sturges(___)
+
+share_over_14
+n_classes</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Il confronto <code>stay &gt; 14</code> dà TRUE o FALSE per ogni ricovero, e la media dei TRUE è la loro quota. <code>nclass.Sturges()</code> vuole i dati, cioè <code>stay</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>set.seed(11)
+stay &lt;- pmax(1, round(exp(rnorm(1500, 1.6, 0.7))))
+
+share_over_14 &lt;- mean(stay &gt; 14)      # share of stays longer than 14 days
+n_classes &lt;- nclass.Sturges(stay)
+
+share_over_14
+n_classes</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Due ospedali di dimensioni diverse</h2><span class="tag">Guarda</span></div>
+  <p>L'ospedale A ha 1.500 ricoveri, il B 300. Confrontiamo i ricoveri lunghi prima con le frequenze assolute, poi con quelle relative.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:232px">set.seed(4)
+hosp_a &lt;- pmax(1, round(exp(rnorm(1500, 1.6, 0.6))))
+hosp_b &lt;- pmax(1, round(exp(rnorm(300, 1.9, 0.6))))
+
+long_a &lt;- hosp_a &gt; 14
+long_b &lt;- hosp_b &gt; 14
+
+c(A = sum(long_a), B = sum(long_b))                    # absolute counts
+round(c(A = mean(long_a), B = mean(long_b)), 3)        # relative frequencies</textarea></div>
+  <p class="ask">Quale ospedale ha più ricoveri lunghi? La risposta cambia a seconda della frequenza che guardi?</p>
+  <details><summary>Risposta</summary><div>
+    <p>In numero assoluto i ricoveri lunghi possono sembrare più frequenti nell'ospedale grande, semplicemente perché ha più ricoveri. La frequenza relativa mette i due ospedali sulla stessa scala e mostra dove i ricoveri lunghi pesano di più. Tra gruppi di dimensioni diverse si confrontano le frequenze relative.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Un accumulo sospetto</h2><span class="tag">Per chi vuole andare a fondo</span></div>
+  <p>In un archivio di pesi una parte dei valori è stata arrotondata alla decina. Guardando la frequenza dell'ultima cifra si vede subito. Esegui, poi prova a cambiare la quota di valori arrotondati (<code>0.3</code>).</p>
+  <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:210px">set.seed(9)
+weight &lt;- round(rnorm(2000, 72, 12))
+rounded &lt;- runif(2000) &lt; 0.3                         # 30% rounded to tens
+weight[rounded] &lt;- round(weight[rounded], -1)
+
+last_digit &lt;- weight %% 10
+barplot(table(last_digit), col = "#1D95C6", border = NA,
+        xlab = "last digit of weight", ylab = "count")</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Senza arrotondamenti le dieci cifre finali avrebbero frequenze simili; qui lo 0 ne ha molte di più. È il tipo di anomalia che nessun indice riassuntivo rivela e che una distribuzione di frequenza mostra a colpo d'occhio, come le date accumulate al primo del mese.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

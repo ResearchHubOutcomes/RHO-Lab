@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: campionamento | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: numerosità campionaria, correzione per popolazione finita, campione stratificato e distorsione di selezione. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/campionamento/">← Torna alla scheda</a>
+</div>
+<h1>Campionamento</h1>
+<p>Quattro esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Quanti questionari servono</h2><span class="tag">Modifica</span></div>
+  <p>Numerosità per stimare una proporzione attesa del 20% con un margine di ±3%, poi corretta per una popolazione di 5.000 cartelle. Esegui, poi prova un margine di ±5% e una proporzione attesa del 50%.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:188px">p &lt;- 0.20      # expected proportion: try 0.50
+e &lt;- 0.03      # margin of error: try 0.05
+n &lt;- ceiling(qnorm(0.975)^2 * p * (1 - p) / e^2)
+n
+
+N &lt;- 5000      # population: 5,000 records
+ceiling(n / (1 + (n - 1) / N))   # finite population correction</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Allargando il margine la numerosità scende molto, perché dipende dal quadrato del margine. Con una proporzione attesa del 50% la numerosità è massima: è il caso più prudente quando non si sa cosa aspettarsi. La correzione per popolazione finita conta solo quando il campione è una parte non piccola della popolazione.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Calcola la numerosità</h2><span class="tag">Scrivi tu</span></div>
+  <p>Vuoi stimare una prevalenza attesa del 10% con un margine di ±2% al 95% di confidenza. Completa la formula sostituendo i <code>___</code>.</p>
+  <div class="cell" data-check="n_req == ceiling(qnorm(0.975)^2 * 0.10 * 0.90 / 0.02^2)" data-ok="Corretto: con un margine stretto servono parecchi soggetti anche per una prevalenza bassa." data-ko="Non ancora: scrivi le proporzioni come numeri decimali (10% = 0.10)."><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:122px">p &lt;- ___
+e &lt;- ___
+n_req &lt;- ceiling(qnorm(0.975)^2 * p * (1 - p) / e^2)
+n_req</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>In R le percentuali si scrivono come proporzioni: 10% è <code>0.10</code>, 2% è <code>0.02</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>p &lt;- 0.10
+e &lt;- 0.02
+n_req &lt;- ceiling(qnorm(0.975)^2 * p * (1 - p) / e^2)
+n_req</pre>
+    <button type="button" class="ghost" data-use-solution="c2">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Un campione stratificato</h2><span class="tag">Guarda</span></div>
+  <p>Una popolazione di 1.000 pazienti in tre distretti di dimensioni diverse. Estraiamo il 10% da ciascun distretto. Esegui, poi confronta con un campione casuale semplice della stessa dimensione.</p>
+  <div class="cell"><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:254px">set.seed(55)
+pop &lt;- data.frame(id = 1:1000,
+                  district = rep(c("A", "B", "C"), c(600, 300, 100)))
+
+strat &lt;- do.call(rbind, lapply(split(pop, pop$district),
+                 function(s) s[sample(nrow(s), round(nrow(s) * 0.10)), ]))
+table(strat$district)                       # stratified: exactly 60/30/10
+
+simple &lt;- pop[sample(nrow(pop), 100), ]
+table(simple$district)                      # simple random: varies</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Il campione stratificato rispetta esattamente le proporzioni dei distretti; quello casuale semplice le rispetta solo in media, e da un'estrazione all'altra il distretto piccolo può risultare sotto o sovrarappresentato. Per questo la stratificazione garantisce la presenza di tutti i gruppi e migliora la precisione.</p>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Un campione grande ma distorto</h2><span class="tag">Per chi vuole andare a fondo</span></div>
+  <p>I pazienti più soddisfatti compilano più volentieri il questionario. Confrontiamo la soddisfazione vera con quella dei rispondenti. Esegui, poi aumenta la popolazione da <code>5000</code> a <code>50000</code>.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:232px">set.seed(12)
+N &lt;- 5000                                    # try 50000
+satisfaction &lt;- round(pmin(10, pmax(0, rnorm(N, 6, 2))))
+p_answer &lt;- plogis(-3 + 0.4 * satisfaction)  # happier patients answer more
+answered &lt;- runif(N) &lt; p_answer
+
+c(respondents = sum(answered))
+round(c(true_mean = mean(satisfaction),
+        respondents_mean = mean(satisfaction[answered])), 2)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>La media dei rispondenti resta più alta di quella vera anche con dieci volte più pazienti: la numerosità non corregge un modo di selezione distorto. Serve un campione probabilistico, oppure tenere conto dei non rispondenti nell'analisi.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

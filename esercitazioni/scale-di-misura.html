@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: scale di misura | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: variabili nominali, ordinali, a intervalli e a rapporti, fattori e categorizzazione. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/scale-di-misura/">← Torna alla scheda</a>
+</div>
+<h1>Scale di misura</h1>
+<p>Quattro esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Il codice di triage è ordinale</h2><span class="tag">Guarda</span></div>
+  <p>Dieci codici di priorità al triage (1 = più urgente). In R una variabile ordinale si rappresenta con un fattore ordinato. Esegui e leggi i risultati.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:144px">triage &lt;- factor(c(3, 4, 2, 4, 5, 3, 1, 4, 3, 2),
+                 levels = 1:5, ordered = TRUE)
+table(triage)
+median(as.integer(triage))   # the median makes sense
+triage &lt; 3                   # order comparisons are allowed</textarea></div>
+  <p class="ask">Perché la mediana ha senso e la media dei codici molto meno?</p>
+  <details><summary>Risposta</summary><div>
+    <p>I codici sono ordinati ma le distanze tra un livello e l'altro non sono uguali: il passaggio da 1 a 2 non corrisponde necessariamente alla stessa "quantità di urgenza" del passaggio da 4 a 5. La mediana usa solo l'ordine, la media presuppone distanze uguali.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>La media di un reparto non esiste</h2><span class="tag">Modifica</span></div>
+  <p>I reparti sono una variabile nominale: R assegna a ciascuno un codice interno. Esegui, poi cambia l'ordine dei livelli (per esempio mettendo <code>"Ortopedia"</code> per primo) e riesegui.</p>
+  <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:144px">ward &lt;- factor(c("Medicina", "Chirurgia", "Medicina", "Ortopedia", "Medicina"),
+               levels = c("Chirurgia", "Medicina", "Ortopedia"))  # try another order
+as.integer(ward)          # internal codes
+mean(as.integer(ward))    # a number, but meaningless
+table(ward)               # what makes sense: counts</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Cambiando l'ordine dei livelli cambiano i codici e quindi la loro "media", mentre i dati sono sempre gli stessi: la prova che quel numero non significa nulla. Per una variabile nominale hanno senso solo conteggi e frequenze.</p>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Una scala Likert</h2><span class="tag">Scrivi tu</span></div>
+  <p>Trasforma le risposte a un questionario in un fattore <b>ordinato</b>, con i livelli nell'ordine giusto, e calcola la categoria mediana. Sostituisci i <code>___</code>.</p>
+  <div class="cell" data-check="is.ordered(likert) &amp;&amp; identical(levels(likert), c(&#x27;per nulla&#x27;, &#x27;poco&#x27;, &#x27;abbastanza&#x27;, &#x27;molto&#x27;))" data-ok="Corretto: con un fattore ordinato R conosce l&#x27;ordine delle risposte e la categoria mediana ha senso." data-ko="Non ancora: il fattore deve essere ordinato, con i livelli da &quot;per nulla&quot; a &quot;molto&quot;."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:232px">answers &lt;- c("molto", "abbastanza", "poco", "abbastanza", "molto",
+             "per nulla", "abbastanza", "molto", "poco", "abbastanza")
+
+likert &lt;- factor(answers,
+                 levels = c("per nulla", "poco", "abbastanza", "molto"),
+                 ordered = ___)
+
+table(likert)
+levels(likert)[median(as.integer(likert))]   # median category</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>L'argomento <code>ordered</code> vuole un valore logico: <code>TRUE</code> o <code>FALSE</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>answers &lt;- c("molto", "abbastanza", "poco", "abbastanza", "molto",
+             "per nulla", "abbastanza", "molto", "poco", "abbastanza")
+
+likert &lt;- factor(answers,
+                 levels = c("per nulla", "poco", "abbastanza", "molto"),
+                 ordered = TRUE)
+
+table(likert)
+levels(likert)[median(as.integer(likert))]   # median category</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Il punto di taglio cambia il risultato</h2><span class="tag">Modifica</span></div>
+  <p>Simuliamo l'età e un punteggio che cresce con l'età. Poi dividiamo i pazienti in "giovani" e "anziani" con un punto di taglio. Esegui, poi prova un taglio a 75 invece di 65.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:254px">set.seed(1)
+age &lt;- round(rnorm(300, 70, 10))
+score &lt;- 20 + 0.5 * age + rnorm(300, 0, 6)   # score grows with age
+
+cutoff &lt;- 65                                  # try 75
+group &lt;- cut(age, breaks = c(-Inf, cutoff, Inf),
+             labels = c("young", "old"))
+table(group)
+round(tapply(score, group, mean), 1)          # mean score by group
+round(coef(lm(score ~ age))["age"], 2)        # using age as it is</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con il taglio cambiano la numerosità dei gruppi e la differenza tra le medie, anche se i dati sono identici. La regressione sull'età continua usa tutta l'informazione e non dipende da nessuna scelta arbitraria. Categorizzare una variabile continua fa perdere informazione e potenza.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>
