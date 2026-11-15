@@ -111,7 +111,7 @@ round(rbind(final_only = est(lm(final ~ group)),
             change     = est(lm(I(final - baseline) ~ group)),
             ancova     = est(lm(final ~ group + baseline))), 2)</textarea></div>
   <details><summary>Cosa notare</summary><div>
-    <p>I dati sono simulati con un effetto vero di 5 unità. L'ANCOVA ha l'errore standard più piccolo, e qui anche la stima più vicina al valore vero. Quando il basale varia poco i tre metodi si avvicinano, ma l'ANCOVA resta il più preciso. Quale analisi usare va dichiarato nel protocollo, non scelto dopo aver visto i risultati.</p>
+    <p>I dati sono simulati con un effetto vero di 5 unità. L'ANCOVA ha l'errore standard più piccolo: in un singolo studio una stima può cadere più vicina al valore vero per caso, ma è l'errore standard a dire quale metodo sbaglia meno in media. Quando il basale varia poco i tre metodi si avvicinano, ma l'ANCOVA resta il più preciso. Quale analisi usare va dichiarato nel protocollo, non scelto dopo aver visto i risultati.</p>
   </div></details>
 </section>
 
