@@ -111,7 +111,7 @@ outcome  &lt;- 50 + 8 * severity + rnorm(1000, 0, 5)    # treatment has NO effec
 
 coef(summary(lm(outcome ~ treated)))["treated", c("Estimate", "Pr(&gt;|t|)")]</textarea></div>
   <details><summary>Cosa notare</summary><div>
-    <p>Senza randomizzazione i trattati sono pazienti meno gravi e il trattamento sembra efficace, con un valore p minuscolo, anche se non fa nulla. Con il sorteggio la gravità si distribuisce in modo simile nei due gruppi e la stima torna vicina a zero, anche se la gravità non è stata misurata.</p>
+    <p>Senza randomizzazione i trattati sono pazienti meno gravi, e il trattamento sembra ridurre l'esito di quasi 9 punti, con un valore p minuscolo, anche se non fa nulla. Con il sorteggio la gravità si distribuisce in modo simile nei due gruppi e la stima torna vicina a zero, anche se la gravità non è stata misurata.</p>
   </div></details>
 </section>
 

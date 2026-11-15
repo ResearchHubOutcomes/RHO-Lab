@@ -36,15 +36,15 @@ c(mean = mean(stay), mean2 = mean(stay2))</textarea></div>
 <!-- 2 -->
 <section class="ex">
   <div class="ex-head"><span class="ex-n">2</span><h2>Un valore estremo</h2><span class="tag">Modifica</span></div>
-  <p>Due gruppi di 15 pazienti con degenze simili. Nel gruppo B c'è un ricovero lunghissimo. Esegui, poi cambia 200 in 2000 e confronta i due valori p.</p>
+  <p>Due gruppi di 15 pazienti: nel gruppo B le degenze sono più lunghe, e c'è un ricovero lunghissimo. Esegui, poi cambia 200 in 2000 e confronta i due valori p.</p>
   <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:166px">set.seed(30)
 a &lt;- round(rlnorm(15, 1.6, 0.4))
-b &lt;- c(round(rlnorm(14, 1.9, 0.4)), 200)      # one extreme stay, try 2000
+b &lt;- c(round(rlnorm(14, 2.1, 0.4)), 200)      # one extreme stay, try 2000
 
 c(t_test       = t.test(a, b)$p.value,
   mann_whitney = wilcox.test(a, b, exact = FALSE)$p.value)</textarea></div>
   <details><summary>Cosa notare</summary><div>
-    <p>Il valore estremo gonfia la varianza del gruppo B e il t test perde la differenza; il Mann-Whitney, che guarda solo la posizione di quel ricovero nella classifica, non cambia anche quando il valore diventa 2000.</p>
+    <p>Il valore estremo gonfia la varianza del gruppo B e il t test non vede la differenza; il Mann-Whitney la trova, e il suo valore p resta identico anche quando il ricovero passa a 2000 giorni, perché conta solo la sua posizione in classifica.</p>
   </div></details>
 </section>
 
@@ -113,7 +113,7 @@ kruskal.test(stay ~ model)
 pairwise.wilcox.test(stay, model, p.adjust.method = "holm", exact = FALSE)</textarea></div>
   <p class="ask">Quali coppie risultano diverse dopo la correzione?</p>
   <details><summary>Risposta</summary><div>
-    <p>La tabella dei confronti riporta i valori p già corretti con Holm: si leggono confrontandoli con 0,05. Con questi dati la differenza più netta è tra il modello attuale e quello nuovo; il terzo modello sta in mezzo ed è più difficile da distinguere dagli altri due.</p>
+    <p>La tabella riporta i valori p già corretti con Holm, da confrontare con 0,05. Il modello nuovo differisce sia dall'attuale sia dal terzo; tra l'attuale e il terzo la differenza non si distingue dal caso.</p>
   </div></details>
 </section>
 

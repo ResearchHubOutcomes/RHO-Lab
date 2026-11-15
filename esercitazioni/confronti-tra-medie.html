@@ -21,10 +21,12 @@
 <!-- 1 -->
 <section class="ex">
   <div class="ex-head"><span class="ex-n">1</span><h2>Segnale contro rumore</h2><span class="tag">Guarda</span></div>
-  <p>Due coppie di gruppi con la stessa differenza vera, 5 mmHg. Nella prima i pazienti sono simili tra loro, nella seconda molto diversi. Esegui e confronta i due valori p.</p>
-  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:210px">set.seed(3)
-low_a  &lt;- rnorm(30, 140, 4);  low_b  &lt;- rnorm(30, 135, 4)    # little noise
-high_a &lt;- rnorm(30, 140, 40); high_b &lt;- rnorm(30, 135, 40)   # a lot of noise
+  <p>Due coppie di gruppi con la stessa differenza osservata tra le medie, 5 mmHg. Nella prima i pazienti sono simili tra loro, nella seconda molto diversi. Esegui e confronta i due valori p.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:254px">set.seed(3)
+e_a &lt;- as.numeric(scale(rnorm(30)))       # standardised noise: mean 0, sd 1
+e_b &lt;- as.numeric(scale(rnorm(30)))
+low_a  &lt;- 140 + 4 * e_a;  low_b  &lt;- 135 + 4 * e_b     # little noise
+high_a &lt;- 140 + 40 * e_a; high_b &lt;- 135 + 40 * e_b    # a lot of noise
 
 boxplot(list(A = low_a, B = low_b, A = high_a, B = high_b),
         col = c("#1D95C6", "#9fd3ea"), ylab = "systolic pressure (mmHg)")
@@ -91,7 +93,7 @@ par(mar = c(4, 8, 1, 1))
 plot(TukeyHSD(fit), las = 1)</textarea></div>
   <p class="ask">Quali coppie di laboratori differiscono davvero?</p>
   <details><summary>Risposta</summary><div>
-    <p>Sono quelle con l'intervallo che non attraversa lo zero: in pratica tutte le coppie che coinvolgono il laboratorio 4. Gli intervalli di Tukey sono già corretti per i dieci confronti, quindi il rischio complessivo di un falso allarme resta al 5%.</p>
+    <p>Sono quelle con l'intervallo che non attraversa lo zero: le quattro coppie che coinvolgono il laboratorio 4. Gli intervalli di Tukey sono già corretti per i dieci confronti, quindi il rischio complessivo di un falso allarme resta al 5%.</p>
   </div></details>
 </section>
 
@@ -102,14 +104,14 @@ plot(TukeyHSD(fit), las = 1)</textarea></div>
   <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:232px">set.seed(7)
 group &lt;- factor(rep(c("A", "B"), each = 50))
 baseline &lt;- rnorm(100, 150, 15)                  # try 5
-final &lt;- baseline - 8 - 5 * (group == "B") + rnorm(100, 0, 8)
+final &lt;- 52 + 0.6 * baseline - 5 * (group == "B") + rnorm(100, 0, 8)
 
 est &lt;- function(f) coef(summary(f))["groupB", c("Estimate", "Std. Error")]
 round(rbind(final_only = est(lm(final ~ group)),
             change     = est(lm(I(final - baseline) ~ group)),
             ancova     = est(lm(final ~ group + baseline))), 2)</textarea></div>
   <details><summary>Cosa notare</summary><div>
-    <p>L'ANCOVA ha l'errore standard più piccolo: stima lo stesso effetto con più precisione. Quando il basale varia poco, il confronto dei soli valori finali si avvicina all'ANCOVA, mentre le differenze finale − basale aggiungono rumore. Quale analisi usare va dichiarato nel protocollo.</p>
+    <p>I dati sono simulati con un effetto vero di 5 unità. L'ANCOVA ha l'errore standard più piccolo, e qui anche la stima più vicina al valore vero. Quando il basale varia poco i tre metodi si avvicinano, ma l'ANCOVA resta il più preciso. Quale analisi usare va dichiarato nel protocollo, non scelto dopo aver visto i risultati.</p>
   </div></details>
 </section>
 
