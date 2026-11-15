@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: indici di posizione e dispersione | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: media, mediana, quantili, deviazione standard ed errore standard. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/indici-di-posizione-e-dispersione/">← Torna alla scheda</a>
+</div>
+<h1>Indici di posizione e dispersione</h1>
+<p>Sei esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Stessa media, attese diverse</h2><span class="tag">Guarda</span></div>
+  <p>Due ambulatori hanno lo stesso tempo di attesa medio, 30 giorni. Esegui il codice e confronta gli indici.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:250px">set.seed(22)
+clinic1 <- rnorm(60, 30, 2.8)
+clinic2 <- c(rnorm(30, 7, 2), rnorm(30, 53, 3))
+clinic1 <- clinic1 - mean(clinic1) + 30   # same mean: 30 days
+clinic2 <- clinic2 - mean(clinic2) + 30
+
+summary_stats <- function(x) c(mean = mean(x), median = median(x),
+                               sd = sd(x), IQR = IQR(x),
+                               CV = sd(x) / mean(x))
+round(rbind(clinic1 = summary_stats(clinic1),
+            clinic2 = summary_stats(clinic2)), 2)
+
+hist(clinic2, breaks = 20, col = "#278FBC", border = "white",
+     main = "Clinic 2: waiting days", xlab = "days")</textarea></div>
+  <p class="ask">Quale indice basta da solo a capire che i due ambulatori sono molto diversi? E perché la mediana del secondo è poco utile?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Nessun indice di posizione: media e mediana sono quasi uguali. Lo dicono gli indici di dispersione: deviazione standard, scarto interquartile e coefficiente di variazione sono molto più grandi nel secondo ambulatorio.</p>
+    <p>L'istogramma mostra due gruppi separati: la mediana cade nel vuoto tra i due e non corrisponde all'attesa di nessun paziente reale.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Un solo valore estremo</h2><span class="tag">Modifica</span></div>
+  <p>Quaranta degenze simulate, poi aggiungiamo un ricovero di 200 giorni. Esegui, poi cambia <code>200</code> in <code>400</code> e riesegui: cosa succede a media e mediana?</p>
+  <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:190px">set.seed(3)
+stay <- round(rgamma(40, shape = 2, scale = 3))   # length of stay, days
+round(c(mean = mean(stay), median = median(stay)), 1)
+
+stay_extreme <- c(stay, 200)   # one exceptional stay: try 400
+round(c(mean = mean(stay_extreme), median = median(stay_extreme)), 1)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>La media si sposta molto e cresce ancora se il valore estremo aumenta; la mediana cambia appena, e non cambia affatto passando da 200 a 400. Per questo, con degenze, costi e tempi di attesa, la mediana descrive meglio il caso tipico.</p>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Il 90° percentile e la soglia</h2><span class="tag">Scrivi tu</span></div>
+  <p>Per il secondo ambulatorio calcola il 90° percentile delle attese e la quota di pazienti che aspetta più di 45 giorni. Sostituisci i <code>___</code> e premi Esegui: il controllo ti dice se è giusto.</p>
+  <div class="cell" data-check="isTRUE(all.equal(unname(p90), unname(quantile(clinic2, 0.9)))) &amp;&amp; isTRUE(all.equal(share_over_45, mean(clinic2 &gt; 45)))"
+       data-ok="Corretto. Una frase come &quot;il 90% dei pazienti viene visto entro X giorni&quot; è spesso più utile di una media."
+       data-ko="Non ancora: controlla l'argomento probs di quantile() e la soglia da confrontare.">
+    <textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:190px">set.seed(22)
+clinic2 <- c(rnorm(30, 7, 2), rnorm(30, 53, 3))
+clinic2 <- clinic2 - mean(clinic2) + 30
+
+p90 <- quantile(clinic2, probs = ___)
+share_over_45 <- mean(clinic2 > ___)   # mean of TRUE/FALSE = share
+
+p90
+share_over_45</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Il 90° percentile corrisponde a <code>probs = 0.9</code>. Il confronto <code>clinic2 &gt; 45</code> dà TRUE o FALSE per ogni paziente, e la media di valori TRUE/FALSE è la quota di TRUE.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>set.seed(22)
+clinic2 <- c(rnorm(30, 7, 2), rnorm(30, 53, 3))
+clinic2 <- clinic2 - mean(clinic2) + 30
+
+p90 <- quantile(clinic2, probs = 0.9)
+share_over_45 <- mean(clinic2 > 45)   # mean of TRUE/FALSE = share
+
+p90
+share_over_45</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Deviazione standard o errore standard?</h2><span class="tag">Modifica</span></div>
+  <p>Simuliamo l'attesa di <code>n</code> pazienti, con media 30 giorni e deviazione standard 5. Esegui, poi prova <code>n</code> uguale a 10, 100 e 1000.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:170px">set.seed(1)
+n <- 20   # number of patients: try 10, 100, 1000
+x <- rnorm(n, mean = 30, sd = 5)
+
+round(c(mean    = mean(x),
+        sd      = sd(x),              # spread between patients
+        std_err = sd(x) / sqrt(n)),   # precision of the mean
+      2)</textarea></div>
+  <p>Ora lo stesso esperimento per molte numerosità insieme:</p>
+  <div class="cell"><textarea id="c4b" spellcheck="false" aria-label="Codice R, esercizio 4, grafico" style="min-height:270px">set.seed(2)
+ns <- c(5, 10, 20, 50, 100, 200, 500, 1000)   # sample sizes
+true_sd <- 5
+
+res <- sapply(ns, function(n) {
+  x <- rnorm(n, mean = 30, sd = true_sd)
+  c(sd = sd(x), std_err = sd(x) / sqrt(n))
+})
+
+plot(ns, res["sd", ], log = "x", type = "b", pch = 19, col = "#278FBC",
+     ylim = c(0, max(res) * 1.1), xlab = "sample size (log scale)",
+     ylab = "days", main = "Standard deviation vs standard error")
+lines(ns, res["std_err", ], type = "b", pch = 17, col = "#2F8A5F")
+abline(h = true_sd, lty = 2, col = "grey60")
+legend("topright", c("sd", "std_err"), col = c("#278FBC", "#2F8A5F"),
+       pch = c(19, 17), bty = "n")</textarea></div>
+  <p class="ask">Se un articolo riporta "media 30 ± 0,5 giorni" su 1000 pazienti, che cosa ti viene il dubbio che abbiano riportato?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Probabilmente l'errore standard, non la deviazione standard. La deviazione standard descrive quanto variano i pazienti e resta intorno a 5 qualunque sia il campione; l'errore standard descrive la precisione della media e si riduce al crescere di <code>n</code>. Scambiarli fa sembrare i dati molto meno variabili di quanto siano.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Quanti pazienti per dimezzare l'errore?</h2><span class="tag">Scrivi tu</span></div>
+  <p>Con 100 pazienti l'errore standard ha un certo valore. Quanti pazienti servono per dimezzarlo? Scrivi il numero al posto di <code>___</code>: il rapporto stampato dovrebbe venire vicino a 0,5.</p>
+  <div class="cell" data-check="abs(n_half / 100 - 4) &lt; 0.05"
+       data-ok="Esatto: servono quattro volte le osservazioni, perché l'errore standard si riduce come 1/√n."
+       data-ko="Non ancora: il rapporto deve venire circa 0,5. Pensa a come scende 1/√n.">
+    <textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:190px">set.seed(5)
+x <- rnorm(10000, mean = 30, sd = 5)        # a large pool of patients
+std_err <- function(n) sd(x[1:n]) / sqrt(n)
+
+std_err(100)
+
+n_half <- ___                               # how many patients?
+std_err(n_half) / std_err(100)              # should be close to 0.5</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>L'errore standard è <code>s / sqrt(n)</code>. Perché si dimezzi, <code>sqrt(n)</code> deve raddoppiare: quanto deve diventare <code>n</code>?</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>set.seed(5)
+x <- rnorm(10000, mean = 30, sd = 5)        # a large pool of patients
+std_err <- function(n) sd(x[1:n]) / sqrt(n)
+
+std_err(100)
+
+n_half <- 400                               # 4 times the patients
+std_err(n_half) / std_err(100)              # close to 0.5</pre>
+    <button type="button" class="ghost" data-use-solution="c5">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 6 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">6</span><h2>Lo stesso percentile, nove risultati</h2><span class="tag">Per chi vuole andare a fondo</span></div>
+  <p>R calcola i quantili in nove modi diversi (argomento <code>type</code>). Con pochi dati i risultati cambiano: esegui e confronta il 90° percentile di sei valori.</p>
+  <div class="cell"><textarea id="c6" spellcheck="false" aria-label="Codice R, esercizio 6" style="min-height:150px">x <- c(3, 5, 8, 12, 20, 41)   # six waiting times, days
+
+p90_by_type <- sapply(1:9, function(t) quantile(x, 0.9, type = t))
+names(p90_by_type) <- paste0("type", 1:9)
+round(p90_by_type, 1)</textarea></div>
+  <p class="ask">Prova ad aggiungere molti valori a <code>x</code>, per esempio <code>x &lt;- c(x, rnorm(200, 15, 5))</code>: le differenze tra i metodi crescono o si riducono?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Si riducono: con molti dati i metodi interpolano tra osservazioni vicine e danno risultati quasi uguali. Con campioni piccoli invece le differenze sono grandi, per questo in un report va dichiarato quale metodo si è usato (R usa <code>type = 7</code> di default, altri software no).</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>
