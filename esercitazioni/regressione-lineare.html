@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: regressione lineare | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: coefficienti, aggiustamento per confondenti, minimi quadrati, diagnostica dei residui e collinearità. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/regressione-lineare/">← Torna alla scheda</a>
+</div>
+<h1>Regressione lineare</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Leggere i coefficienti</h2><span class="tag">Guarda</span></div>
+  <p>Il modello della scheda: pressione sistolica in funzione di età e sesso, su 180 pazienti simulati. Esegui e leggi le stime con i loro intervalli.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:210px">set.seed(100)
+age &lt;- 40 + runif(180) * 45
+sex &lt;- factor(sample(c("F", "M"), 180, replace = TRUE))
+sbp &lt;- 100 + 0.5 * age + 4 * (sex == "M") + rnorm(180, 0, 11)
+
+fit &lt;- lm(sbp ~ age + sex)
+round(cbind(estimate = coef(fit), confint(fit)), 2)
+summary(fit)$r.squared</textarea></div>
+  <p class="ask">Come si legge il coefficiente di <code>sexM</code>? E l'R² basso vuol dire che il modello è sbagliato?</p>
+  <details><summary>Risposta</summary><div>
+    <p><code>sexM</code> è la differenza media di pressione tra uomini e donne a parità di età: circa 4,6 mmHg. Il modello stima anche 0,48 mmHg in più per ogni anno di età, a parità di sesso.</p>
+    <p>L'R² di 0,26 dice che età e sesso spiegano un quarto della variabilità tra pazienti. Non dice che il modello sia sbagliato: gli effetti medi sono stimati con precisione, ma i singoli pazienti restano molto diversi tra loro.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Più anziani o curati peggio?</h2><span class="tag">Modifica</span></div>
+  <p>L'ospedale B ha degenze più lunghe, ma accoglie pazienti più anziani. Esegui e confronta la differenza grezza con quella aggiustata per età. Poi togli il termine <code>+ 0.15 * age</code> dalla formula di <code>stay</code> e riesegui.</p>
+  <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:210px">set.seed(41)
+hospital &lt;- factor(rep(c("A", "B"), each = 300))
+age  &lt;- rnorm(600, ifelse(hospital == "B", 78, 66), 8)
+stay &lt;- 2 + 0.15 * age + rnorm(600, 0, 2.5)       # hospital has NO effect
+
+crude    &lt;- coef(lm(stay ~ hospital))["hospitalB"]
+adjusted &lt;- coef(lm(stay ~ hospital + age))["hospitalB"]
+round(c(crude = crude, adjusted = adjusted), 2)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>La differenza grezza supera il giorno e mezzo e sparisce quando si aggiusta per età: era tutta dovuta ai pazienti più anziani. Se l'età non influenza la degenza, le due stime sono entrambe vicine a zero. La regressione corregge solo per i fattori inclusi nel modello: quelli non misurati restano un limite da dichiarare.</p>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>La pendenza a mano</h2><span class="tag">Scrivi tu</span></div>
+  <p>Con un solo fattore la pendenza dei minimi quadrati è il rapporto tra codevianza e devianza di x. Completa la formula e confronta il risultato con <code>lm()</code>.</p>
+  <div class="cell" data-check="isTRUE(all.equal(b1, unname(coef(lm(y ~ x))[2])))" data-ok="Corretto: la stessa pendenza di lm(). La retta passa sempre per il punto delle medie, ed è per questo che b0 si ricava così." data-ko="Non ancora: al numeratore serve lo scarto di y dalla sua media, al denominatore il quadrato dello scarto di x."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:210px">set.seed(100)
+x &lt;- 40 + runif(180) * 45                  # age
+y &lt;- 100 + 0.5 * x + rnorm(180, 0, 11)     # systolic pressure
+
+b1 &lt;- sum((x - mean(x)) * (y - ___)) / sum((x - mean(x))^___)
+b0 &lt;- mean(y) - b1 * mean(x)
+
+c(by_hand = b1, lm = unname(coef(lm(y ~ x))[2]))</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Al posto dei due <code>___</code> vanno <code>mean(y)</code> e <code>2</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>set.seed(100)
+x &lt;- 40 + runif(180) * 45                  # age
+y &lt;- 100 + 0.5 * x + rnorm(180, 0, 11)     # systolic pressure
+
+b1 &lt;- sum((x - mean(x)) * (y - mean(y))) / sum((x - mean(x))^2)
+b0 &lt;- mean(y) - b1 * mean(x)
+
+c(by_hand = b1, lm = unname(coef(lm(y ~ x))[2]))</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Quello che dicono i residui</h2><span class="tag">Modifica</span></div>
+  <p>Qui la relazione vera tra indice di massa corporea e un marcatore è curva. Esegui e guarda il grafico dei residui; poi sostituisci la formula con <code>marker ~ bmi + I(bmi^2)</code> e riesegui.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:232px">set.seed(52)
+bmi &lt;- runif(250, 18, 42)
+marker &lt;- 20 + 0.08 * (bmi - 27)^2 + rnorm(250, 0, 2)
+
+fit &lt;- lm(marker ~ bmi)                    # try marker ~ bmi + I(bmi^2)
+plot(fitted(fit), resid(fit), pch = 19, col = "#1D95C688",
+     xlab = "fitted values", ylab = "residuals")
+abline(h = 0, lty = 2)
+summary(fit)$r.squared</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con la retta i residui disegnano una U: il modello sbaglia in modo sistematico agli estremi. Aggiungendo il termine quadratico i residui si dispongono come una nuvola senza forma attorno allo zero. La linearità si verifica sui residui, non sulla variabile di partenza.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Due fattori che dicono la stessa cosa</h2><span class="tag">Modifica</span></div>
+  <p>Peso e circonferenza vita sono molto correlati. Esegui e guarda l'errore standard del coefficiente del peso nei due modelli e il fattore di inflazione della varianza (VIF). Poi abbassa la correlazione cambiando <code>2</code> in <code>8</code> nella riga di <code>waist</code>.</p>
+  <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:276px">set.seed(9)
+weight &lt;- rnorm(200, 80, 12)
+waist  &lt;- 0.9 * weight + 20 + rnorm(200, 0, 2)      # try 8
+sbp    &lt;- 90 + 0.4 * weight + rnorm(200, 0, 10)
+
+se_weight &lt;- function(f) coef(summary(f))["weight", "Std. Error"]
+r2_w &lt;- summary(lm(weight ~ waist))$r.squared
+round(c(cor = cor(weight, waist),
+        se_alone = se_weight(lm(sbp ~ weight)),
+        se_both  = se_weight(lm(sbp ~ weight + waist)),
+        VIF = 1 / (1 - r2_w)), 2)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con due fattori quasi identici il modello non riesce a separarne l'effetto: l'errore standard del peso si moltiplica per cinque e il VIF supera di molto la soglia di allarme di 5-10. Con una correlazione più bassa il problema si ridimensiona. La soluzione non è statistica: si sceglie la variabile più adatta alla domanda.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

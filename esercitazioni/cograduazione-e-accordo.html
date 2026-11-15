@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: cograduazione e accordo | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: correlazione e accordo, Bland-Altman, kappa di Cohen, paradosso della prevalenza, Spearman e Pearson. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/cograduazione-e-accordo/">← Torna alla scheda</a>
+</div>
+<h1>Cograduazione e accordo</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Correlati ma non d&#x27;accordo</h2><span class="tag">Guarda</span></div>
+  <p>Il confronto della scheda tra un misuratore da polso e lo strumento di riferimento. Esegui e guarda prima la correlazione, poi il grafico di Bland-Altman.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:320px">set.seed(121)
+true_bp   &lt;- rnorm(120, 135, 16)
+reference &lt;- true_bp + rnorm(120, 0, 4)
+wrist     &lt;- true_bp + 6 + rnorm(120, 0, 4)
+
+cor(reference, wrist)                      # high, but it is not agreement
+
+d &lt;- wrist - reference
+plot((wrist + reference) / 2, d, pch = 19, col = "#1D95C688",
+     xlab = "mean of the two methods (mmHg)", ylab = "difference (mmHg)")
+abline(h = mean(d), lwd = 2)
+abline(h = mean(d) + c(-1.96, 1.96) * sd(d), lty = 2)
+abline(h = 0, col = "grey60")</textarea></div>
+  <p class="ask">Che cosa mostra il grafico che la correlazione non dice?</p>
+  <details><summary>Risposta</summary><div>
+    <p>La correlazione supera 0,9, ma il grafico mostra che il misuratore da polso legge in media circa 6 mmHg in più, e che per un singolo paziente la differenza può arrivare a 18 mmHg. Se quella differenza sia accettabile è una decisione clinica, da prendere prima di guardare i dati.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Bias e limiti di accordo</h2><span class="tag">Scrivi tu</span></div>
+  <p>Calcola il bias e i limiti di accordo al 95% tra i due misuratori. Sostituisci i <code>___</code>.</p>
+  <div class="cell" data-check="isTRUE(all.equal(c(bias, lower, upper), mean(d) + c(0, -1.96, 1.96) * sd(d)))" data-ok="Corretto. Il bias dice di quanto un metodo si sposta in media, i limiti dicono quanto possono differire le misure sul singolo paziente." data-ko="Non ancora: il bias è la media delle differenze, e il limite superiore usa lo stesso 1,96 di quello inferiore."><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:254px">set.seed(121)
+true_bp   &lt;- rnorm(120, 135, 16)
+reference &lt;- true_bp + rnorm(120, 0, 4)
+wrist     &lt;- true_bp + 6 + rnorm(120, 0, 4)
+
+d &lt;- wrist - reference
+bias  &lt;- mean(___)
+lower &lt;- bias - 1.96 * sd(d)
+upper &lt;- bias + ___ * sd(d)
+round(c(bias = bias, lower = lower, upper = upper), 1)</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Il bias è <code>mean(d)</code>; il limite superiore è <code>bias + 1.96 * sd(d)</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>set.seed(121)
+true_bp   &lt;- rnorm(120, 135, 16)
+reference &lt;- true_bp + rnorm(120, 0, 4)
+wrist     &lt;- true_bp + 6 + rnorm(120, 0, 4)
+
+d &lt;- wrist - reference
+bias  &lt;- mean(d)
+lower &lt;- bias - 1.96 * sd(d)
+upper &lt;- bias + 1.96 * sd(d)
+round(c(bias = bias, lower = lower, upper = upper), 1)</pre>
+    <button type="button" class="ghost" data-use-solution="c2">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Il kappa di due codificatori</h2><span class="tag">Scrivi tu</span></div>
+  <p>Due codificatori classificano 100 cartelle in tre categorie. Calcola l'accordo osservato, quello atteso per caso e il kappa di Cohen.</p>
+  <div class="cell" data-check="isTRUE(all.equal(kappa, (sum(diag(cod)) / sum(cod) - sum(rowSums(cod) * colSums(cod)) / sum(cod)^2) / (1 - sum(rowSums(cod) * colSums(cod)) / sum(cod)^2)))" data-ok="Corretto. Il kappa misura quanta parte dell&#x27;accordo possibile oltre il caso è stata davvero raggiunta." data-ko="Non ancora: la diagonale va presa dalla tabella cod, e al denominatore c&#x27;è 1 meno l&#x27;accordo atteso."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:210px">cod &lt;- matrix(c(40, 5, 3, 2, 30, 4, 1, 6, 9), nrow = 3,
+              dimnames = list(A = c("I", "II", "III"), B = c("I", "II", "III")))
+n &lt;- sum(cod)
+
+po &lt;- sum(diag(___)) / n                              # observed agreement
+pe &lt;- sum(rowSums(cod) * colSums(cod)) / n^2          # expected by chance
+kappa &lt;- (po - pe) / (1 - ___)
+round(c(po = po, pe = pe, kappa = kappa), 2)</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>I casi concordanti stanno sulla diagonale: <code>diag(cod)</code>. Il denominatore è <code>1 - pe</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>cod &lt;- matrix(c(40, 5, 3, 2, 30, 4, 1, 6, 9), nrow = 3,
+              dimnames = list(A = c("I", "II", "III"), B = c("I", "II", "III")))
+n &lt;- sum(cod)
+
+po &lt;- sum(diag(cod)) / n                              # observed agreement
+pe &lt;- sum(rowSums(cod) * colSums(cod)) / n^2          # expected by chance
+kappa &lt;- (po - pe) / (1 - pe)
+round(c(po = po, pe = pe, kappa = kappa), 2)</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Lo stesso accordo, due kappa</h2><span class="tag">Modifica</span></div>
+  <p>Due coppie di valutatori sono d'accordo sul 90% dei casi. Nella prima la diagnosi è presente in metà dei pazienti, nella seconda è rara. Esegui e confronta i kappa; poi prova a rendere la diagnosi ancora più rara cambiando la seconda tabella in <code>c(2, 5, 5, 88)</code>.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:232px">kappa2 &lt;- function(tab) {
+  n &lt;- sum(tab); po &lt;- sum(diag(tab)) / n
+  pe &lt;- sum(rowSums(tab) * colSums(tab)) / n^2
+  c(agreement = po, kappa = (po - pe) / (1 - pe))
+}
+common &lt;- matrix(c(45, 5, 5, 45), 2)
+rare   &lt;- matrix(c(5, 5, 5, 85), 2)                # try c(2, 5, 5, 88)
+
+round(rbind(common = kappa2(common), rare = kappa2(rare)), 2)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con la stessa quota di accordo il kappa passa da 0,8 a meno di 0,5 quando la diagnosi è rara, perché l'accordo atteso per caso è già altissimo. Per questo il kappa va sempre riportato insieme all'accordo osservato e alla prevalenza.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Spearman o Pearson?</h2><span class="tag">Modifica</span></div>
+  <p>Il codice di triage e i minuti di permanenza in pronto soccorso dell'esempio della scheda. Esegui e confronta i due indici; poi sostituisci 210 con 2100, un valore estremo.</p>
+  <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:166px">triage  &lt;- c(1, 2, 2, 3, 4, 5, 5)
+minutes &lt;- c(35, 60, 80, 95, 150, 240, 210)       # try 2100 instead of 210
+
+round(c(pearson  = cor(triage, minutes),
+        spearman = cor(triage, minutes, method = "spearman"),
+        kendall  = cor(triage, minutes, method = "kendall")), 2)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Spearman e Kendall lavorano sui ranghi e non cambiano: 2100 resta un valore alto, come 210. Pearson invece misura la linearità e scende da 0,97 a circa 0,6 per un solo valore. Per variabili ordinali come il codice di triage gli indici sui ranghi sono la scelta più naturale.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: analisi di sopravvivenza | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: censura, curve di Kaplan-Meier, log-rank, modello di Cox ed eventi concorrenti. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/analisi-di-sopravvivenza/">← Torna alla scheda</a>
+</div>
+<h1>Analisi di sopravvivenza</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Gli esercizi usano il pacchetto survival: la prima volta il caricamento può richiedere qualche secondo in più. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Ignorare la censura</h2><span class="tag">Guarda</span></div>
+  <p>Simuliamo 500 pazienti con un tempo mediano vero alla recidiva di 12 mesi, seguiti per un massimo di 18 mesi. Esegui e confronta la mediana vera con due calcoli sbagliati e con Kaplan-Meier.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:320px">if (!requireNamespace("survival", quietly = TRUE)) webr::install("survival")
+library(survival)
+set.seed(4)
+t_true &lt;- rexp(500, rate = log(2) / 12)          # true median = 12 months
+follow &lt;- runif(500, 3, 18)                      # time each patient is observed
+time   &lt;- pmin(t_true, follow)
+event  &lt;- as.numeric(t_true &lt;= follow)
+
+km &lt;- survfit(Surv(time, event) ~ 1)
+round(c(true_median        = 12,
+        only_events        = median(time[event == 1]),
+        censored_as_events = median(time),
+        kaplan_meier       = unname(summary(km)$table["median"])), 1)</textarea></div>
+  <p class="ask">Perché i due calcoli "semplici" sottostimano entrambi il tempo alla recidiva?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Escludere i censurati lascia solo i pazienti che hanno avuto la recidiva presto; trattarli come eventi fa finire la loro storia il giorno in cui è finita l'osservazione. Kaplan-Meier usa l'informazione corretta, "liberi dalla recidiva almeno fino a quel giorno", e torna vicino alla mediana vera.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>La curva di Kaplan-Meier</h2><span class="tag">Guarda</span></div>
+  <p>Il dataset pubblico <code>lung</code> della scheda, incluso nel pacchetto survival. Esegui per vedere le curve di uomini e donne e il log-rank test.</p>
+  <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:232px">if (!requireNamespace("survival", quietly = TRUE)) webr::install("survival")
+library(survival)
+km &lt;- survfit(Surv(time, status) ~ sex, data = lung)    # sex: 1 men, 2 women
+plot(km, col = c("#1D95C6", "#3B4FB8"), lwd = 2, mark.time = TRUE,
+     xlab = "days", ylab = "survival")
+legend("topright", c("men", "women"), col = c("#1D95C6", "#3B4FB8"), lwd = 2, bty = "n")
+
+summary(km, times = 365)$surv          # survival at one year
+survdiff(Surv(time, status) ~ sex, data = lung)</textarea></div>
+  <p class="ask">Che cosa sono le piccole tacche sulle curve?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Sono le osservazioni censurate: pazienti usciti dall'osservazione in quel giorno senza aver avuto l'evento. La curva non scende in corrispondenza delle tacche, ma da lì in poi quei pazienti non contano più tra quelli a rischio.</p>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Kaplan-Meier a mano</h2><span class="tag">Scrivi tu</span></div>
+  <p>Otto pazienti, tempi in mesi; <code>status</code> vale 1 per l'evento e 0 per la censura. La tabella riporta, per ogni tempo con almeno un evento, i pazienti a rischio <code>n</code> e gli eventi <code>d</code>. Calcola la sopravvivenza stimata a 6 mesi.</p>
+  <div class="cell" data-check="isTRUE(all.equal(S6, summary(survfit(Surv(time, status) ~ 1), times = 6)$surv))" data-ok="Corretto: lo stesso valore di survfit(). Il paziente censurato a 3 mesi esce dal denominatore dal tempo successivo, senza contare come evento." data-ko="Non ancora: fino a 6 mesi i tempi con eventi sono quattro (2, 3, 4 e 6)."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:276px">if (!requireNamespace("survival", quietly = TRUE)) webr::install("survival")
+library(survival)
+time   &lt;- c(2, 3, 3, 4, 6, 8, 9, 12)
+status &lt;- c(1, 1, 0, 1, 1, 0, 1, 0)
+
+n &lt;- c(8, 7, 5, 4, 2)        # at risk at months 2, 3, 4, 6, 9
+d &lt;- c(1, 1, 1, 1, 1)        # events at the same times
+
+S6 &lt;- prod(1 - d[1:___] / n[1:___])      # survival at 6 months
+S6
+summary(survfit(Surv(time, status) ~ 1), times = 6)$surv</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Servono i primi quattro tempi di evento: <code>d[1:4]</code> e <code>n[1:4]</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>if (!requireNamespace("survival", quietly = TRUE)) webr::install("survival")
+library(survival)
+time   &lt;- c(2, 3, 3, 4, 6, 8, 9, 12)
+status &lt;- c(1, 1, 0, 1, 1, 0, 1, 0)
+
+n &lt;- c(8, 7, 5, 4, 2)        # at risk at months 2, 3, 4, 6, 9
+d &lt;- c(1, 1, 1, 1, 1)        # events at the same times
+
+S6 &lt;- prod(1 - d[1:4] / n[1:4])          # survival at 6 months
+S6
+summary(survfit(Surv(time, status) ~ 1), times = 6)$surv</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Il modello di Cox</h2><span class="tag">Modifica</span></div>
+  <p>Il modello della scheda, con sesso, età e stato funzionale ECOG. Esegui e leggi gli hazard ratio; poi togli <code>ph.ecog</code> dalla formula e guarda come cambia quello del sesso.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:166px">if (!requireNamespace("survival", quietly = TRUE)) webr::install("survival")
+library(survival)
+cox &lt;- coxph(Surv(time, status) ~ sex + age + ph.ecog, data = lung)   # try without ph.ecog
+round(summary(cox)$conf.int[, c(1, 3, 4)], 2)      # HR and 95% CI
+
+cox.zph(cox)                                       # proportional hazards check</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Le donne hanno un rischio istantaneo di decesso più basso di circa il 40% a parità di età e stato funzionale, e ogni punto ECOG in più moltiplica il rischio per circa 1,6. Togliendo ph.ecog l'hazard ratio del sesso passa da 0,58 a 0,60: lo stato funzionale non spiega la differenza tra uomini e donne. <code>cox.zph()</code> non mostra violazioni evidenti dei rischi proporzionali.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Quando la morte impedisce la riammissione</h2><span class="tag">Guarda</span></div>
+  <p>Pazienti anziani dopo una dimissione: possono essere riammessi o morire prima di esserlo. Esegui e confronta la stima di Kaplan-Meier che tratta i decessi come censure con l'incidenza cumulativa che li considera eventi concorrenti.</p>
+  <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:386px">if (!requireNamespace("survival", quietly = TRUE)) webr::install("survival")
+library(survival)
+set.seed(23)
+n &lt;- 1000
+t_readm &lt;- rexp(n, 1 / 20)        # months to readmission
+t_death &lt;- rexp(n, 1 / 15)        # months to death
+t_end   &lt;- 24
+time  &lt;- pmin(t_readm, t_death, t_end)
+cause &lt;- factor(ifelse(time == t_end, "censored", ifelse(t_readm &lt; t_death, "readmission", "death")),
+                levels = c("censored", "readmission", "death"))
+
+km &lt;- survfit(Surv(time, cause == "readmission") ~ 1)       # deaths treated as censored
+aj &lt;- survfit(Surv(time, cause) ~ 1)                        # competing risks (Aalen-Johansen)
+
+round(c(one_minus_km = 1 - summary(km, times = 12)$surv,
+        cumulative_incidence = summary(aj, times = 12)$pstate[, aj$states == "readmission"]), 3)</textarea></div>
+  <p class="ask">Quale delle due stime risponde alla domanda "che quota di pazienti viene riammessa entro un anno"?</p>
+  <details><summary>Risposta</summary><div>
+    <p>L'incidenza cumulativa, circa il 34%. 1 − Kaplan-Meier, circa il 48%, stima la quota di riammessi in un mondo immaginario in cui nessuno muore, e quindi la sovrastima. Quando il decesso è frequente, come negli anziani, la differenza è tutt'altro che trascurabile.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

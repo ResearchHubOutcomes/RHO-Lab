@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: modelli lineari generalizzati | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: regressione logistica, odds ratio e rischio relativo, Poisson con offset e sovradispersione. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/modelli-lineari-generalizzati/">← Torna alla scheda</a>
+</div>
+<h1>Modelli lineari generalizzati</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Perché non una retta</h2><span class="tag">Guarda</span></div>
+  <p>Riammissioni (0 o 1) in funzione del numero di comorbidità. Esegui e confronta la retta della regressione lineare con la curva della logistica.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:320px">set.seed(111)
+comorb &lt;- rpois(2000, 2)
+readm  &lt;- rbinom(2000, 1, plogis(-4 + 0.8 * comorb))
+
+lin &lt;- lm(readm ~ comorb)
+logit &lt;- glm(readm ~ comorb, family = binomial)
+
+grid &lt;- data.frame(comorb = 0:14)
+plot(grid$comorb, predict(lin, grid), type = "l", lwd = 2, col = "grey50",
+     ylim = c(-0.15, 1.25), xlab = "comorbidities", ylab = "probability of readmission")
+lines(grid$comorb, predict(logit, grid, type = "response"), lwd = 2, col = "#1D95C6")
+abline(h = c(0, 1), lty = 3)
+round(predict(lin, data.frame(comorb = 0)), 3)     # linear prediction at 0</textarea></div>
+  <p class="ask">Che cosa succede alla retta con poche e con molte comorbidità?</p>
+  <details><summary>Risposta</summary><div>
+    <p>La retta prevede una probabilità negativa per chi non ha comorbidità e, con molte comorbidità, supera il 100%. La curva della logistica resta sempre tra 0 e 1: il modello è lineare sulla scala del logit, poi viene riportato sulla scala delle probabilità.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Gli odds ratio</h2><span class="tag">Guarda</span></div>
+  <p>Il modello logistico della scheda, con comorbidità ed età. Esegui e leggi gli odds ratio con i loro intervalli.</p>
+  <div class="cell"><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:210px">set.seed(111)
+n &lt;- 2000
+comorb &lt;- rpois(n, 2)
+age    &lt;- round(runif(n, 50, 90))
+readm  &lt;- rbinom(n, 1, plogis(-3 + 0.45 * comorb + 0.01 * (age - 70)))
+
+logit &lt;- glm(readm ~ comorb + age, family = binomial)
+round(exp(cbind(OR = coef(logit), confint.default(logit))), 3)</textarea></div>
+  <p class="ask">Come si legge l'odds ratio delle comorbidità? E quello dell'età?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Ogni comorbidità in più moltiplica l'odds di riammissione per circa 1,4, a parità di età. L'età ha un odds ratio vicinissimo a 1 con un intervallo che include 1: con questi dati il suo effetto non si distingue dal caso, anche se nella simulazione c'era, molto piccolo.</p>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Odds ratio non è rischio relativo</h2><span class="tag">Scrivi tu</span></div>
+  <p>Un odds ratio di 2 sembra dire "rischio doppio". Calcola il rischio relativo corrispondente quando il rischio di base è del 2% e quando è del 40%, con la formula della scheda.</p>
+  <div class="cell" data-check="isTRUE(all.equal(rr_rare, 2 / (1 - 0.02 + 0.02 * 2))) &amp;&amp; isTRUE(all.equal(rr_frequent, 2 / (1 - 0.4 + 0.4 * 2)))" data-ok="Corretto. Con un evento raro odds ratio e rischio relativo quasi coincidono; con un evento frequente lo stesso odds ratio di 2 corrisponde a un rischio aumentato di meno della metà." data-ko="Non ancora: in entrambi i &lt;code&gt;___&lt;/code&gt; va il rischio di base, p0."><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:166px">or &lt;- 2
+rr_from_or &lt;- function(or, p0) or / (1 - ___ + ___ * or)
+
+rr_rare     &lt;- rr_from_or(or, 0.02)
+rr_frequent &lt;- rr_from_or(or, 0.40)
+round(c(rare = rr_rare, frequent = rr_frequent), 2)</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>La formula è <code>OR / (1 - p0 + p0 * OR)</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>or &lt;- 2
+rr_from_or &lt;- function(or, p0) or / (1 - p0 + p0 * or)
+
+rr_rare     &lt;- rr_from_or(or, 0.02)
+rr_frequent &lt;- rr_from_or(or, 0.40)
+round(c(rare = rr_rare, frequent = rr_frequent), 2)</pre>
+    <button type="button" class="ghost" data-use-solution="c3">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Contare o confrontare tassi</h2><span class="tag">Modifica</span></div>
+  <p>Ricoveri in sei distretti di dimensioni diverse. Esegui il modello con l'offset della popolazione, poi togli <code>+ offset(log(pop))</code> e guarda come cambia la stima per la quota di anziani.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:232px">districts &lt;- data.frame(pop = c(42000, 58000, 31000, 77000, 25000, 64000),
+                        elderly = c(0.22, 0.25, 0.28, 0.20, 0.31, 0.24))
+set.seed(5)
+districts$admissions &lt;- rnbinom(6, size = 30,
+  mu = districts$pop * 0.004 * exp(3 * (districts$elderly - 0.25)))
+
+pois &lt;- glm(admissions ~ elderly + offset(log(pop)),     # try without offset
+            family = poisson, data = districts)
+round(exp(coef(pois)["elderly"] * 0.10), 2)   # rate ratio for +10 points of elderly</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con l'offset il modello confronta tassi: un distretto con dieci punti in più di anziani ha un tasso di ricovero più alto. Senza offset il modello confronta conteggi, e i distretti grandi pesano per la loro popolazione: dato che qui i distretti con più anziani sono anche i più piccoli, la stima si rovescia.</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Più variabili di quanto la Poisson ammetta</h2><span class="tag">Scrivi tu</span></div>
+  <p>Conteggi di accessi in pronto soccorso generati da una binomiale negativa. Calcola l'indice di dispersione del modello di Poisson: la somma dei residui di Pearson al quadrato divisa per i gradi di libertà residui.</p>
+  <div class="cell" data-check="isTRUE(all.equal(phi, sum(residuals(pois, type = &quot;pearson&quot;)^2) / df.residual(pois)))" data-ok="Corretto. Un indice ben sopra 1 vuol dire sovradispersione: gli errori standard della Poisson sono troppo piccoli, e il quasi-Poisson li moltiplica per la radice dell&#x27;indice." data-ko="Non ancora: i residui sono di tipo &quot;pearson&quot; e i gradi di libertà si chiedono al modello pois."><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:298px">set.seed(17)
+n &lt;- 300
+chronic &lt;- rbinom(n, 1, 0.3)
+visits  &lt;- rnbinom(n, size = 1.5, mu = exp(0.3 + 0.7 * chronic))
+
+pois &lt;- glm(visits ~ chronic, family = poisson)
+phi &lt;- sum(residuals(pois, type = "___")^2) / df.residual(___)
+phi
+
+# standard errors: Poisson vs quasi-Poisson
+c(poisson = coef(summary(pois))["chronic", 2],
+  quasi   = coef(summary(glm(visits ~ chronic, family = quasipoisson)))["chronic", 2])</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p>Il tipo di residuo va tra virgolette, <code>"pearson"</code>; <code>df.residual()</code> vuole il modello.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>set.seed(17)
+n &lt;- 300
+chronic &lt;- rbinom(n, 1, 0.3)
+visits  &lt;- rnbinom(n, size = 1.5, mu = exp(0.3 + 0.7 * chronic))
+
+pois &lt;- glm(visits ~ chronic, family = poisson)
+phi &lt;- sum(residuals(pois, type = "pearson")^2) / df.residual(pois)
+phi
+
+# standard errors: Poisson vs quasi-Poisson
+c(poisson = coef(summary(pois))["chronic", 2],
+  quasi   = coef(summary(glm(visits ~ chronic, family = quasipoisson)))["chronic", 2])</pre>
+    <button type="button" class="ghost" data-use-solution="c5">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>

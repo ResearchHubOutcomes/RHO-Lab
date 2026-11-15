@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esercitazione: meta-analisi | RHO</title>
+<meta name="description" content="Esercizi in R da fare nel browser: contare i voti, forest plot, effetti fissi, eterogeneità, effetti casuali e bias di pubblicazione. Appunti di statistica di RHO Consulting.">
+<link rel="stylesheet" href="assets/rho-ex.css">
+</head>
+<body>
+<main class="wrap">
+
+<div class="top">
+  <p class="eyebrow">Appunti di statistica · Esercitazione</p>
+  <a href="https://www.rhoconsulting.it/articoli-on-line/meta-analisi/">← Torna alla scheda</a>
+</div>
+<h1>Meta-analisi</h1>
+<p>Cinque esercizi per mettere alla prova i concetti della scheda. I calcoli sono fatti per esteso, senza pacchetti. Il codice R gira direttamente nel browser: puoi modificarlo e rieseguirlo quante volte vuoi, senza installare niente. I dati sono simulati.</p>
+<p class="status" id="status" aria-live="polite"><span class="dot"></span><span data-txt>Sto caricando R nel browser: la prima volta servono alcuni secondi…</span></p>
+
+<!-- 1 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">1</span><h2>Contare i voti</h2><span class="tag">Guarda</span></div>
+  <p>I cinque studi della scheda, ciascuno con il suo rischio relativo e intervallo di confidenza. Esegui e conta quanti sono significativi presi da soli.</p>
+  <div class="cell"><textarea id="c1" spellcheck="false" aria-label="Codice R, esercizio 1" style="min-height:188px">studies &lt;- data.frame(rr    = c(0.72, 0.78, 0.85, 0.80, 0.88),
+                      lower = c(0.58, 0.64, 0.62, 0.55, 0.66),
+                      upper = c(0.89, 0.95, 1.17, 1.16, 1.18))
+
+studies$significant &lt;- studies$upper &lt; 1
+studies
+sum(studies$significant)</textarea></div>
+  <p class="ask">Due studi su cinque sono significativi. Vuol dire che il trattamento funziona solo nel 40% dei casi?</p>
+  <details><summary>Risposta</summary><div>
+    <p>No. Tutti e cinque gli studi stimano una riduzione del rischio; tre non sono significativi perché sono piccoli e imprecisi, non perché trovino un effetto diverso. Contare i voti confonde l'assenza di prove con la prova di assenza: la meta-analisi combina le stime pesandole per la loro precisione.</p>
+  </div></details>
+</section>
+
+<!-- 2 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">2</span><h2>Effetti fissi a mano</h2><span class="tag">Scrivi tu</span></div>
+  <p>Ricava la varianza di ciascuno studio dall'intervallo di confidenza, poi calcola la stima combinata con i pesi inversi della varianza.</p>
+  <div class="cell" data-check="isTRUE(all.equal(theta, sum(yi / vi) / sum(1 / vi)))" data-ok="Corretto: rischio relativo combinato 0,79, con un intervallo che esclude 1. Combinare cinque studi imprecisi dà una stima precisa." data-ko="Non ancora: i pesi sono l&#x27;inverso delle varianze vi, e la media pesata si divide per la somma dei pesi."><textarea id="c2" spellcheck="false" aria-label="Codice R, esercizio 2" style="min-height:254px">studies &lt;- data.frame(rr    = c(0.72, 0.78, 0.85, 0.80, 0.88),
+                      lower = c(0.58, 0.64, 0.62, 0.55, 0.66),
+                      upper = c(0.89, 0.95, 1.17, 1.16, 1.18))
+yi &lt;- log(studies$rr)
+vi &lt;- ((log(studies$upper) - log(studies$lower)) / (2 * 1.96))^2
+
+w &lt;- 1 / ___
+theta &lt;- sum(w * yi) / sum(___)
+se &lt;- sqrt(1 / sum(w))
+round(exp(c(RR = theta, lower = theta - 1.96 * se, upper = theta + 1.96 * se)), 3)</textarea></div>
+  <details><summary>Suggerimento</summary><div>
+    <p><code>w &lt;- 1 / vi</code>; al denominatore di <code>theta</code> va <code>w</code>.</p>
+  </div></details>
+  <details><summary>Soluzione</summary><div>
+<pre>studies &lt;- data.frame(rr    = c(0.72, 0.78, 0.85, 0.80, 0.88),
+                      lower = c(0.58, 0.64, 0.62, 0.55, 0.66),
+                      upper = c(0.89, 0.95, 1.17, 1.16, 1.18))
+yi &lt;- log(studies$rr)
+vi &lt;- ((log(studies$upper) - log(studies$lower)) / (2 * 1.96))^2
+
+w &lt;- 1 / vi
+theta &lt;- sum(w * yi) / sum(w)
+se &lt;- sqrt(1 / sum(w))
+round(exp(c(RR = theta, lower = theta - 1.96 * se, upper = theta + 1.96 * se)), 3)</pre>
+    <button type="button" class="ghost" data-use-solution="c2">Usa la soluzione nel codice</button>
+  </div></details>
+</section>
+
+<!-- 3 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">3</span><h2>Il forest plot</h2><span class="tag">Guarda</span></div>
+  <p>Lo stesso risultato in un grafico: ogni studio con il suo intervallo, il quadrato proporzionale al peso, la stima combinata in fondo.</p>
+  <div class="cell"><textarea id="c3" spellcheck="false" aria-label="Codice R, esercizio 3" style="min-height:342px">rr &lt;- c(0.72, 0.78, 0.85, 0.80, 0.88)
+lower &lt;- c(0.58, 0.64, 0.62, 0.55, 0.66); upper &lt;- c(0.89, 0.95, 1.17, 1.16, 1.18)
+yi &lt;- log(rr); vi &lt;- ((log(upper) - log(lower)) / 3.92)^2
+w &lt;- 1 / vi; theta &lt;- sum(w * yi) / sum(w); se &lt;- sqrt(1 / sum(w))
+
+k &lt;- length(rr); pos &lt;- k:1 + 1
+par(mar = c(4, 7, 1, 1))
+plot(NA, xlim = c(0.5, 1.25), ylim = c(0.5, k + 1.5), log = "x", yaxt = "n",
+     xlab = "relative risk (log scale)", ylab = "")
+abline(v = 1, lty = 2)
+segments(lower, pos, upper, pos)
+points(rr, pos, pch = 15, cex = 3 * sqrt(w / max(w)), col = "#1D95C6")
+polygon(exp(c(theta - 1.96 * se, theta, theta + 1.96 * se, theta)), c(1, 1.25, 1, 0.75), col = "#3B4FB8")
+axis(2, at = c(pos, 1), labels = c(paste("Study", 1:k), "Pooled"), las = 1)</textarea></div>
+  <p class="ask">Perché il rombo è molto più stretto degli intervalli dei singoli studi?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Perché combina l'informazione di tutti gli studi: la sua precisione è la somma delle precisioni. I quadrati più grandi sono gli studi più precisi, che pesano di più nel risultato.</p>
+  </div></details>
+</section>
+
+<!-- 4 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">4</span><h2>Uno studio discordante</h2><span class="tag">Modifica</span></div>
+  <p>Aggiungiamo un sesto studio con un effetto molto più forte degli altri. Esegui e confronta il modello a effetti fissi con quello a effetti casuali (DerSimonian-Laird); poi riporta lo studio 6 a un RR di 0.80 con intervallo da 0.60 a 1.07.</p>
+  <div class="cell"><textarea id="c4" spellcheck="false" aria-label="Codice R, esercizio 4" style="min-height:342px">rr    &lt;- c(0.72, 0.78, 0.85, 0.80, 0.88, 0.40)      # try 0.80
+lower &lt;- c(0.58, 0.64, 0.62, 0.55, 0.66, 0.30)      # try 0.60
+upper &lt;- c(0.89, 0.95, 1.17, 1.16, 1.18, 0.53)      # try 1.07
+yi &lt;- log(rr); vi &lt;- ((log(upper) - log(lower)) / 3.92)^2; k &lt;- length(yi)
+
+w &lt;- 1 / vi; fixed &lt;- sum(w * yi) / sum(w)
+Q &lt;- sum(w * (yi - fixed)^2)
+I2 &lt;- max(0, (Q - (k - 1)) / Q)
+tau2 &lt;- max(0, (Q - (k - 1)) / (sum(w) - sum(w^2) / sum(w)))
+ws &lt;- 1 / (vi + tau2); random &lt;- sum(ws * yi) / sum(ws)
+
+round(c(Q = Q, I2 = I2, tau2 = tau2,
+        RR_fixed = exp(fixed), RR_random = exp(random),
+        se_fixed = sqrt(1 / sum(w)), se_random = sqrt(1 / sum(ws))), 3)</textarea></div>
+  <details><summary>Cosa notare</summary><div>
+    <p>Con lo studio discordante l'eterogeneità diventa alta: la variabilità tra gli studi non si spiega con il caso. Il modello a effetti casuali dà pesi più simili agli studi e un intervallo più largo, che riflette l'incertezza su quanto l'effetto vari tra contesti. L'eterogeneità va indagata: che cosa ha di diverso quello studio?</p>
+  </div></details>
+</section>
+
+<!-- 5 -->
+<section class="ex">
+  <div class="ex-head"><span class="ex-n">5</span><h2>Gli studi che mancano</h2><span class="tag">Guarda</span></div>
+  <p>Simuliamo 80 studi su un trattamento che non ha effetto. Gli studi grandi vengono pubblicati sempre; quelli piccoli quasi solo se la stima va nella direzione di un beneficio. Esegui e guarda il funnel plot degli studi pubblicati.</p>
+  <div class="cell"><textarea id="c5" spellcheck="false" aria-label="Codice R, esercizio 5" style="min-height:386px">set.seed(31)
+n_arm &lt;- round(exp(runif(80, log(40), log(1500))))       # patients per arm
+se &lt;- sqrt(2 / (n_arm * 0.2))                             # approx. SE of log RR
+yi &lt;- rnorm(80, 0, se)                                    # true RR = 1
+published &lt;- n_arm &gt; 800 | yi &lt; 0 | runif(80) &lt; 0.2       # small studies: mostly if RR &lt; 1
+
+plot(exp(yi), se, ylim = rev(range(se)), log = "x", pch = 19,
+     col = ifelse(published, "#1D95C6", "grey85"),
+     xlab = "relative risk (log scale)", ylab = "standard error")
+abline(v = 1, lty = 2)
+
+w &lt;- 1 / se^2
+small &lt;- published &amp; n_arm &lt; 200
+round(c(all_studies    = exp(sum(w * yi) / sum(w)),
+        published_only = exp(sum((w * yi)[published]) / sum(w[published])),
+        small_published_mean = exp(mean(yi[small]))), 3)</textarea></div>
+  <p class="ask">Che cosa succede alla stima combinata se si usano solo gli studi pubblicati?</p>
+  <details><summary>Risposta</summary><div>
+    <p>Il funnel plot perde un angolo: in basso a destra mancano gli studi piccoli con risultati sfavorevoli (in grigio). La stima combinata scende sotto 1 e gli studi piccoli pubblicati suggeriscono in media una riduzione del rischio del 20%: un beneficio che non esiste. Qui l'effetto sulla stima complessiva è contenuto perché gli studi grandi pesano molto; con pochi studi grandi la distorsione è maggiore. Per questo una meta-analisi parte da una ricerca sistematica, che cerca anche registri e studi non pubblicati.</p>
+  </div></details>
+</section>
+
+<footer>
+  <p>RHO Consulting · <a href="https://www.rhoconsulting.it/articoli-on-line/">Appunti di statistica</a> · <a href="index.html">Tutte le esercitazioni</a>. Dati simulati a scopo didattico. Il codice gira con webR, la versione di R per il browser.</p>
+</footer>
+</main>
+<script type="module" src="assets/rho-ex.js"></script>
+</body>
+</html>
